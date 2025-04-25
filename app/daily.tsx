@@ -3,21 +3,32 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
-import SwipeStack from '../components/daily/SwipeStack';
-import FrequencyAdjustModal from '../components/daily/FrequencyAdjustModal';
+import SwipeStack from './components/daily/SwipeStack';
+import FrequencyAdjustModal from './components/daily/FrequencyAdjustModal';
 import { getDailyContacts, updateContactLastContacted, updateContactFrequency } from '../services/api';
 import { useRouter } from 'expo-router';
+
+// Define Contact interface
+interface Contact {
+  id: string;
+  name: string;
+  category: string;
+  lastContacted?: string;
+  notes?: string;
+  avatar_url?: string;
+  reminder_frequency: number;
+}
 
 export default function DailyScreen() {
   const { user } = useAuth();
   const { isPremium } = useUser();
   const router = useRouter();
   
-  const [contacts, setContacts] = useState([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [showFrequencyModal, setShowFrequencyModal] = useState(false);
-  const [selectedContact, setSelectedContact] = useState(null);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   
   // Fetch daily contacts
   useEffect(() => {
@@ -26,7 +37,7 @@ export default function DailyScreen() {
     const fetchContacts = async () => {
       try {
         setLoading(true);
-        const dailyContacts = await getDailyContacts(user.uid);
+        const dailyContacts = await getDailyContacts(user.id);
         setContacts(dailyContacts);
         setLoading(false);
       } catch (err) {
@@ -40,7 +51,7 @@ export default function DailyScreen() {
   }, [user]);
   
   // Handler for message action (swipe right)
-  const handleMessage = (contactId) => {
+  const handleMessage = (contactId: string) => {
     const contact = contacts.find(c => c.id === contactId);
     if (contact) {
       router.push({
@@ -51,7 +62,7 @@ export default function DailyScreen() {
   };
   
   // Handler for snooze action (swipe left)
-  const handleSnooze = async (contactId) => {
+  const handleSnooze = async (contactId: string) => {
     try {
       // For now, just mark as contacted which will push the next contact date
       await updateContactLastContacted(contactId, new Date().toISOString());
@@ -65,7 +76,7 @@ export default function DailyScreen() {
   };
   
   // Handler for contacted action (swipe up)
-  const handleContacted = async (contactId) => {
+  const handleContacted = async (contactId: string) => {
     try {
       await updateContactLastContacted(contactId, new Date().toISOString());
       
@@ -78,7 +89,7 @@ export default function DailyScreen() {
   };
   
   // Handler for adjust frequency action (swipe down)
-  const handleAdjustFrequency = (contactId) => {
+  const handleAdjustFrequency = (contactId: string) => {
     const contact = contacts.find(c => c.id === contactId);
     if (contact) {
       setSelectedContact(contact);
@@ -87,7 +98,7 @@ export default function DailyScreen() {
   };
   
   // Handler for saving new frequency
-  const handleSaveFrequency = async (frequency) => {
+  const handleSaveFrequency = async (frequency: number) => {
     if (!selectedContact) return;
     
     try {
@@ -133,16 +144,18 @@ export default function DailyScreen() {
           onPress={() => {
             setError(null);
             setLoading(true);
-            getDailyContacts(user.uid)
-              .then(dailyContacts => {
-                setContacts(dailyContacts);
-                setLoading(false);
-              })
-              .catch(err => {
-                console.error('Error retrying fetch:', err);
-                setError('Failed to load your daily contacts. Please try again later.');
-                setLoading(false);
-              });
+            if (user) {
+              getDailyContacts(user.id)
+                .then(dailyContacts => {
+                  setContacts(dailyContacts);
+                  setLoading(false);
+                })
+                .catch(err => {
+                  console.error('Error retrying fetch:', err);
+                  setError('Failed to load your daily contacts. Please try again later.');
+                  setLoading(false);
+                });
+            }
           }}
         >
           <Text style={styles.retryButtonText}>Retry</Text>
