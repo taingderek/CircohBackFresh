@@ -44,7 +44,7 @@ export default function ResetPasswordScreen() {
 
   return (
     <ImageBackground
-      source={require('../../assets/images/background.png')}
+      source={require('../../assets/images/icon.png')}
       style={styles.backgroundImage}
     >
       <StatusBar style="light" />
