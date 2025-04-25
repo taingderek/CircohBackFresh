@@ -5,8 +5,12 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
-
+import AppProviders from './core/providers/AppProviders';
+import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColorScheme } from '@/components/useColorScheme';
+import { AuthProvider } from '../contexts/AuthContext';
+import { UserProvider } from '../contexts/UserContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -24,6 +28,11 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    // Add Montserrat fonts as specified in the blueprint
+    MontserratRegular: require('../assets/fonts/Montserrat-Regular.ttf'),
+    MontserratMedium: require('../assets/fonts/Montserrat-Medium.ttf'),
+    MontserratSemiBold: require('../assets/fonts/Montserrat-SemiBold.ttf'),
+    MontserratBold: require('../assets/fonts/Montserrat-Bold.ttf'),
     ...FontAwesome.font,
   });
 
@@ -46,14 +55,26 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  // Always use dark mode as specified in the blueprint
+  const colorScheme = 'dark';
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <UserProvider>
+          <AppProviders>
+            <ThemeProvider value={DarkTheme}>
+              <StatusBar style="light" />
+              <Stack>
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+                <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+              </Stack>
+            </ThemeProvider>
+          </AppProviders>
+        </UserProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
