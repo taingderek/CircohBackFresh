@@ -59,6 +59,46 @@ Default values are provided in the `app/core/config/env.ts` file for development
     - `store/` - Redux store
     - `utils/` - Utility functions
 
+## Database Setup
+
+The application uses Supabase for database functionality. The database schema and sample data can be set up using the provided migration files.
+
+### Migrations and Seed Data
+
+1. Install the Supabase CLI:
+   ```bash
+   npm install -g supabase
+   ```
+
+2. Login to Supabase:
+   ```bash
+   supabase login
+   ```
+
+3. Set your Supabase project ID as an environment variable:
+   ```bash
+   export SUPABASE_PROJECT_ID=your_project_id
+   ```
+
+4. Run the migrations and seed script:
+   ```bash
+   ./supabase/apply_migrations.sh
+   ```
+
+This will create all the necessary tables and populate them with test data for development purposes.
+
+### Database Schema
+
+The application uses the following main tables:
+- `profiles` - Extended user information
+- `todos` - Task management
+- `categories` - Todo categorization
+- `habits` - Habit tracking
+- `mood_logs` - Mood tracking
+- `focus_sessions` - Focused work periods
+- `gratitude_entries` - Gratitude journal
+- `shared_todos` - Collaboration features
+
 ## Technologies Used
 
 - React Native
