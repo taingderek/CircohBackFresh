@@ -47,6 +47,16 @@ export const COLORS = {
 };
 
 /**
+ * Font family constants for the application
+ */
+export const FONT_FAMILIES = {
+  REGULAR: 'Montserrat-Regular',
+  MEDIUM: 'Montserrat-Medium',
+  SEMIBOLD: 'Montserrat-SemiBold',
+  BOLD: 'Montserrat-Bold',
+};
+
+/**
  * Font sizes following the blueprint
  */
 export const FONT_SIZES = {

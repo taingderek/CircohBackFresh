@@ -9,7 +9,7 @@ import {
   PAUSE,
   PERSIST,
   PURGE,
-  REGISTER,
+  REGISTER as REGISTER_PERSIST,
 } from 'redux-persist';
 
 // Import slices
@@ -20,6 +20,7 @@ import memoriesReducer from './slices/memoriesSlice';
 import messagingReducer from './slices/messagingSlice';
 import subscriptionReducer from './slices/subscriptionSlice';
 import scoreReducer from './slices/scoreSlice';
+import travelReducer from './slices/travelSlice';
 // These will be implemented later:
 // import messagingReducer from './slices/messagingSlice';
 // import subscriptionReducer from './slices/subscriptionSlice';
@@ -49,6 +50,12 @@ const memoriesPersistConfig = {
   whitelist: ['memories', 'contactMemories'],
 };
 
+const travelPersistConfig = {
+  key: 'travel',
+  storage: AsyncStorage,
+  whitelist: ['travelPlans'],
+};
+
 // Combine all reducers
 const rootReducer = combineReducers({
   auth: persistReducer(authPersistConfig, authReducer),
@@ -58,6 +65,7 @@ const rootReducer = combineReducers({
   messaging: messagingReducer,
   subscription: subscriptionReducer,
   score: scoreReducer,
+  travel: persistReducer(travelPersistConfig, travelReducer),
   // These will be added as we implement them:
   // messaging: messagingReducer,
   // subscription: subscriptionReducer,
@@ -69,10 +77,19 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        // Ignore these action types
-        ignoredActions: ['auth/login/fulfilled', 'auth/register/fulfilled'],
+        // Ignore redux-persist actions to avoid serialization errors
+        ignoredActions: [
+          'auth/login/fulfilled', 
+          'auth/register/fulfilled', 
+          FLUSH, 
+          REHYDRATE, 
+          PAUSE, 
+          PERSIST, 
+          PURGE, 
+          REGISTER_PERSIST
+        ],
         // Ignore these field paths in all actions
-        ignoredActionPaths: ['meta.arg', 'payload.timestamp'],
+        ignoredActionPaths: ['meta.arg', 'payload.timestamp', 'register'],
         // Ignore these paths in the state
         ignoredPaths: ['auth.user.created_at', 'auth.user.updated_at'],
       },

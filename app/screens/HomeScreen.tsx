@@ -1,26 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Stack, Link } from 'expo-router';
+import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, SPACING, FONT_SIZES, FONT_FAMILIES } from '@/app/core/constants/theme';
-import HeaderWithAvatar from '@/app/components/navigation/HeaderWithAvatar';
-import Icon from '@/app/components/common/Icon';
+import { COLORS, SPACING, FONT_SIZES, FONT_FAMILIES } from '../core/constants/theme';
+import HeaderWithAvatar from '../components/navigation/HeaderWithAvatar';
+import Icon from '../components/common/Icon';
 
 export default function HomeScreen() {
   const [userName, setUserName] = useState('John Doe');
   const [avatarUri, setAvatarUri] = useState('https://randomuser.me/api/portraits/men/32.jpg');
 
   const handleAvatarPress = () => {
-    // Just console log for now - we'll handle navigation in the onAvatarPress prop
-    console.log('Avatar pressed from home screen');
+    // Custom avatar press handler
+    console.log('Avatar pressed');
+    // Example: navigation.navigate('profile');
   };
 
   // Example of notification icon in right actions
   const renderRightActions = () => (
-    <TouchableOpacity 
-      style={styles.iconButton}
-      onPress={() => console.log('Notifications pressed')}
-    >
+    <TouchableOpacity style={styles.iconButton}>
       <Icon name="notifications-outline" size={24} color={COLORS.TEXT} />
       {/* Notification badge */}
       <View style={styles.notificationBadge}>
@@ -50,15 +48,6 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>Welcome back, {userName.split(' ')[0]}</Text>
           <Text style={styles.sectionSubtitle}>Keep your connections strong!</Text>
           
-          <View style={styles.scoreCard}>
-            <Text style={styles.scoreTitle}>CircohBack Score</Text>
-            <Text style={styles.score}>750</Text>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: '75%' }]} />
-            </View>
-            <Text style={styles.scoreSubtitle}>Great consistency! Keep it up.</Text>
-          </View>
-          
           {/* Sample card content */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -68,11 +57,9 @@ export default function HomeScreen() {
             <Text style={styles.cardText}>
               You have 3 people to connect with today.
             </Text>
-            <Link href="/daily" asChild>
-              <TouchableOpacity style={styles.cardButton}>
-                <Text style={styles.cardButtonText}>View All</Text>
-              </TouchableOpacity>
-            </Link>
+            <TouchableOpacity style={styles.cardButton}>
+              <Text style={styles.cardButtonText}>View All</Text>
+            </TouchableOpacity>
           </View>
           
           <View style={styles.card}>
@@ -83,10 +70,7 @@ export default function HomeScreen() {
             <Text style={styles.cardText}>
               2 connection reminders scheduled for this week.
             </Text>
-            <TouchableOpacity 
-              style={styles.cardButton}
-              onPress={() => console.log('Manage Reminders pressed')}
-            >
+            <TouchableOpacity style={styles.cardButton}>
               <Text style={styles.cardButtonText}>Manage Reminders</Text>
             </TouchableOpacity>
           </View>
@@ -118,44 +102,6 @@ const styles = StyleSheet.create({
     fontFamily: FONT_FAMILIES.REGULAR,
     color: COLORS.TEXT_SECONDARY,
     marginBottom: SPACING.LARGE,
-  },
-  scoreCard: {
-    backgroundColor: COLORS.CARD,
-    borderRadius: 16,
-    padding: SPACING.LARGE,
-    marginBottom: SPACING.LARGE,
-    alignItems: 'center',
-  },
-  scoreTitle: {
-    fontSize: FONT_SIZES.MEDIUM,
-    fontFamily: FONT_FAMILIES.MEDIUM,
-    color: COLORS.TEXT,
-    marginBottom: SPACING.SMALL,
-  },
-  score: {
-    fontSize: 48,
-    fontFamily: FONT_FAMILIES.BOLD,
-    color: COLORS.PRIMARY,
-    marginVertical: SPACING.SMALL,
-  },
-  progressBar: {
-    width: '100%',
-    height: 8,
-    backgroundColor: COLORS.GRAY_DARK,
-    borderRadius: 4,
-    marginVertical: SPACING.MEDIUM,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: COLORS.PRIMARY,
-    borderRadius: 4,
-  },
-  scoreSubtitle: {
-    fontSize: FONT_SIZES.SMALL,
-    fontFamily: FONT_FAMILIES.REGULAR,
-    color: COLORS.TEXT_SECONDARY,
-    textAlign: 'center',
   },
   card: {
     backgroundColor: COLORS.CARD,
