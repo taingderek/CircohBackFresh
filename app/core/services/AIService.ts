@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storageService } from './StorageService';
 import { store } from '../store';
 
 // Types
@@ -28,6 +28,13 @@ export interface MessageResult {
   quotaRemaining: number;
 }
 
+// Ensure we have a type for the user with subscription
+interface UserWithSubscription {
+  id: string;
+  subscription: string;
+  [key: string]: any; // Allow other properties
+}
+
 class AIServiceClass {
   private API_URL = 'https://api.openai.com/v1/chat/completions';
   private API_KEY = process.env.OPENAI_API_KEY || '';
@@ -36,7 +43,8 @@ class AIServiceClass {
   // Check if a tone is available based on subscription status
   public isToneAvailable(tone: MessageTone): boolean {
     const state = store.getState();
-    const { subscription } = state.auth.user || { subscription: 'FREE' };
+    // Get subscription status from the subscription slice instead of user
+    const isPremium = state.subscription?.isPremium || false;
     
     // Free tones available to all users
     const freeTones: MessageTone[] = ['casual', 'caring'];
@@ -48,7 +56,7 @@ class AIServiceClass {
       return true;
     }
     
-    return premiumTones.includes(tone) && subscription === 'PREMIUM';
+    return premiumTones.includes(tone) && isPremium;
   }
   
   // Check if user has available message quota
@@ -59,36 +67,39 @@ class AIServiceClass {
   
   // Get current user's message quota
   public async getUserQuota(): Promise<MessageQuota> {
-    // Try to get from local storage first
-    const storedQuota = await AsyncStorage.getItem(this.QUOTA_STORAGE_KEY);
-    
-    if (storedQuota) {
-      const parsedQuota = JSON.parse(storedQuota) as MessageQuota;
+    try {
+      // Try to get from local storage using StorageService
+      const storedQuota = await storageService.getMessageQuota<MessageQuota>();
       
-      // Check if we need to reset the quota (weekly)
-      const resetDate = new Date(parsedQuota.resetDate);
-      const now = new Date();
-      
-      if (now > resetDate) {
-        // Reset the quota since it's past the reset date
-        const newResetDate = new Date();
-        newResetDate.setDate(newResetDate.getDate() + 7); // Set next reset 7 days from now
+      if (storedQuota) {
+        // Check if we need to reset the quota (weekly)
+        const resetDate = new Date(storedQuota.resetDate);
+        const now = new Date();
         
-        const updatedQuota: MessageQuota = {
-          ...parsedQuota,
-          usedThisWeek: 0,
-          resetDate: newResetDate.toISOString()
-        };
+        if (now > resetDate) {
+          // Reset the quota since it's past the reset date
+          const newResetDate = new Date();
+          newResetDate.setDate(newResetDate.getDate() + 7); // Set next reset 7 days from now
+          
+          const updatedQuota: MessageQuota = {
+            ...storedQuota,
+            usedThisWeek: 0,
+            resetDate: newResetDate.toISOString()
+          };
+          
+          // Update local storage and Supabase
+          await this.updateQuotaStorage(updatedQuota);
+          return updatedQuota;
+        }
         
-        // Update local storage and Supabase
-        await this.updateQuotaStorage(updatedQuota);
-        return updatedQuota;
+        return storedQuota;
       }
-      
-      return parsedQuota;
+    } catch (error) {
+      console.warn('Error reading quota from storage:', error);
+      // If there's an error, proceed to fetch from Supabase
     }
     
-    // If not in local storage, fetch from Supabase
+    // If not in local storage or there was an error, fetch from Supabase
     return this.fetchQuotaFromSupabase();
   }
   
@@ -121,7 +132,7 @@ class AIServiceClass {
       resetDate: data.reset_date
     };
     
-    // Store in AsyncStorage for faster access
+    // Store in storage for faster access
     await this.updateQuotaStorage(quota);
     
     return quota;
@@ -160,26 +171,35 @@ class AIServiceClass {
     // Update with the actual ID from Supabase
     newQuota.id = data.id;
     
-    // Store in AsyncStorage
+    // Store in storage
     await this.updateQuotaStorage(newQuota);
     
     return newQuota;
   }
   
-  // Update quota in both AsyncStorage and Supabase
+  // Update quota in both storage and Supabase
   private async updateQuotaStorage(quota: MessageQuota): Promise<void> {
-    // Update AsyncStorage
-    await AsyncStorage.setItem(this.QUOTA_STORAGE_KEY, JSON.stringify(quota));
+    try {
+      // Update local storage
+      await storageService.setMessageQuota(quota);
+    } catch (error) {
+      console.warn('Error updating quota in storage:', error);
+      // Continue with Supabase update even if storage update fails
+    }
     
-    // Update Supabase
-    await supabase
-      .from('message_quotas')
-      .update({
-        weekly_quota: quota.weeklyQuota,
-        used_this_week: quota.usedThisWeek,
-        reset_date: quota.resetDate
-      })
-      .eq('id', quota.id);
+    try {
+      // Update Supabase
+      await supabase
+        .from('message_quotas')
+        .update({
+          weekly_quota: quota.weeklyQuota,
+          used_this_week: quota.usedThisWeek,
+          reset_date: quota.resetDate
+        })
+        .eq('id', quota.id);
+    } catch (error) {
+      console.error('Error updating quota in Supabase:', error);
+    }
   }
   
   // Generate a message using AI

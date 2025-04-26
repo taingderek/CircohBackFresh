@@ -16,7 +16,12 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.circohback.app"
+      "bundleIdentifier": "com.circohback.app",
+      "infoPlist": {
+        "UIFileSharingEnabled": true,
+        "LSSupportsOpeningDocumentsInPlace": true,
+        "NSDocumentsFolderUsageDescription": "Allow CircohBack to access your documents folder."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -31,6 +36,7 @@
     "plugins": [
       "expo-router"
     ],
-    "scheme": "circohback"
+    "scheme": "circohback",
+    "newArchEnabled": true
   }
 }

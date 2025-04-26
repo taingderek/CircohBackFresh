@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
-import { useUser } from '../contexts/UserContext';
+import { useUser } from './contexts/UserContext';
+
 import SwipeStack from './components/daily/SwipeStack';
 import FrequencyAdjustModal from './components/daily/FrequencyAdjustModal';
 import { getDailyContacts, updateContactLastContacted, updateContactFrequency } from '../services/api';

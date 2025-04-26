@@ -13,4 +13,14 @@ export const checkSupabaseConnectivity = async (): Promise<boolean> => {
     console.error('Supabase connectivity error:', error);
     return false;
   }
-}; 
+};
+
+/**
+ * Network utility functions for connectivity and API status checks
+ */
+const NetworkUtils = {
+  checkSupabaseConnectivity,
+  // Add more network-related utilities here as needed
+};
+
+export default NetworkUtils; 

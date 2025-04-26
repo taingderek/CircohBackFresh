@@ -1,10 +1,10 @@
 export const Fonts = {
   // Define font constants to use throughout the app
-  SpaceMono: 'SpaceMono',
-  MontserratRegular: 'MontserratRegular',
-  MontserratMedium: 'MontserratMedium',
-  MontserratSemiBold: 'MontserratSemiBold',
-  MontserratBold: 'MontserratBold',
+  SpaceMono: 'SpaceMono-Regular',
+  MontserratRegular: 'Montserrat-Regular',
+  MontserratMedium: 'Montserrat-Medium',
+  MontserratSemiBold: 'Montserrat-SemiBold',
+  MontserratBold: 'Montserrat-Bold',
 };
 
 // Font mapping object for useFonts
