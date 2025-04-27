@@ -67,7 +67,7 @@ export default function DailyScreen() {
         options={{
           title: 'Today\'s Contacts',
           headerRight: () => (
-            <Link href={'/settings' as any} asChild>
+            <Link href={'/settings/' as any} asChild>
               <TouchableOpacity style={styles.settingsButton}>
                 <FontAwesome name="gear" size={24} color="black" />
               </TouchableOpacity>

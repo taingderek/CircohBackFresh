@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User, useAuth } from './AuthContext';
+import { useSupabaseAuth } from '../app/core/hooks/useSupabaseAuth';
 
 // Define the structure of user data
 interface UserData {
@@ -38,24 +38,36 @@ const UserContext = createContext<UserContextType>({
 
 // UserProvider component that wraps your app and provides the user context
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
+  const { user } = useSupabaseAuth();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isPremium, setIsPremium] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const isMounted = useRef(true);
+
+  // Set up cleanup to prevent state updates after unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Load user data when auth user changes
   useEffect(() => {
     const loadUserData = async () => {
       if (!user) {
-        setUserData(null);
-        setIsPremium(false);
-        setLoading(false);
+        if (isMounted.current) {
+          setUserData(null);
+          setIsPremium(false);
+          setLoading(false);
+        }
         return;
       }
 
       try {
-        setLoading(true);
+        if (isMounted.current) {
+          setLoading(true);
+        }
         
         // In a real app, you would fetch this from an API
         // For now, we'll try to get it from AsyncStorage or create default data
@@ -63,12 +75,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         const storedUserData = await AsyncStorage.getItem(`userData-${user.id}`);
         const storedSubscription = await AsyncStorage.getItem(`subscription-${user.id}`);
         
+        if (!isMounted.current) return;
+        
         if (storedUserData) {
           setUserData(JSON.parse(storedUserData));
         } else {
-          // Create default user data
+          // Create default user data with user information from Supabase
           const defaultUserData: UserData = {
-            name: user.name || user.email.split('@')[0],
+            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
             joinDate: new Date().toISOString(),
             preferences: {
               notifications: true,
@@ -89,9 +103,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } catch (error) {
         console.error('Error loading user data:', error);
-        setError('Failed to load user data');
+        if (isMounted.current) {
+          setError('Failed to load user data');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted.current) {
+          setLoading(false);
+        }
       }
     };
 
@@ -103,12 +121,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user) return false;
     
     try {
-      setLoading(true);
-      setError(null);
+      if (isMounted.current) {
+        setLoading(true);
+        setError(null);
+      }
       
       // Update in state and storage
       const updatedData = { ...userData, ...data } as UserData;
-      setUserData(updatedData);
+      if (isMounted.current) {
+        setUserData(updatedData);
+      }
       
       // In a real app, you would also send this to your backend
       await AsyncStorage.setItem(`userData-${user.id}`, JSON.stringify(updatedData));
@@ -116,10 +138,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       return true;
     } catch (error) {
       console.error('Error updating user data:', error);
-      setError('Failed to update user data');
+      if (isMounted.current) {
+        setError('Failed to update user data');
+      }
       return false;
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -128,12 +154,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user) return false;
     
     try {
-      setLoading(true);
-      setError(null);
+      if (isMounted.current) {
+        setLoading(true);
+        setError(null);
+      }
       
       // In a real app, this would involve payment processing
       // Simulate a successful subscription
-      setIsPremium(true);
+      if (isMounted.current) {
+        setIsPremium(true);
+      }
       
       // Store subscription status
       await AsyncStorage.setItem(
@@ -147,10 +177,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       return true;
     } catch (error) {
       console.error('Error subscribing to premium:', error);
-      setError('Failed to process subscription');
+      if (isMounted.current) {
+        setError('Failed to process subscription');
+      }
       return false;
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -159,12 +193,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user) return false;
     
     try {
-      setLoading(true);
-      setError(null);
+      if (isMounted.current) {
+        setLoading(true);
+        setError(null);
+      }
       
       // In a real app, this would involve cancelling subscription in payment processor
       // Simulate a successful cancellation
-      setIsPremium(false);
+      if (isMounted.current) {
+        setIsPremium(false);
+      }
       
       // Update subscription status
       await AsyncStorage.setItem(
@@ -178,10 +216,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       return true;
     } catch (error) {
       console.error('Error cancelling premium:', error);
-      setError('Failed to cancel subscription');
+      if (isMounted.current) {
+        setError('Failed to cancel subscription');
+      }
       return false;
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 

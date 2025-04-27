@@ -12,12 +12,12 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
-import { useAuth } from '../../contexts/AuthContext';
+import { useSupabaseAuth } from '@/app/core/hooks/useSupabaseAuth';
 
 export default function ResetPasswordScreen() {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { resetPassword, error } = useAuth();
+  const { resetPassword, error } = useSupabaseAuth();
 
   const handleResetPassword = async () => {
     if (!email) {

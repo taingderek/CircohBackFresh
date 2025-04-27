@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
-import { useAuth } from '../../contexts/AuthContext';
+import { useSupabaseAuth } from '@/app/core/hooks/useSupabaseAuth';
 
 export default function SignupScreen() {
   const [fullName, setFullName] = useState('');
@@ -22,7 +22,7 @@ export default function SignupScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState('');
   
-  const { signUp, error } = useAuth();
+  const { signUp, error: authError } = useSupabaseAuth();
 
   const validateForm = () => {
     if (!fullName || !email || !password || !confirmPassword) {
@@ -57,7 +57,7 @@ export default function SignupScreen() {
     }
 
     setIsSubmitting(true);
-    const success = await signUp(email, password, fullName);
+    const success = await signUp(email, password, { full_name: fullName });
     setIsSubmitting(false);
 
     if (success) {
@@ -65,6 +65,8 @@ export default function SignupScreen() {
       router.replace('/(onboarding)/' as any);
     }
   };
+
+  const displayError = validationError || authError;
 
   return (
     <ImageBackground
@@ -85,8 +87,8 @@ export default function SignupScreen() {
           <View style={styles.formContainer}>
             <Text style={styles.heading}>Create Account</Text>
             
-            {(validationError || error) && (
-              <Text style={styles.errorText}>{validationError || error}</Text>
+            {displayError && (
+              <Text style={styles.errorText}>{displayError}</Text>
             )}
             
             <TextInput

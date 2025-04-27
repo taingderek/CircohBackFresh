@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 
@@ -36,19 +36,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const isMounted = useRef(true);
+
+  // Set up cleanup to prevent state updates after unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Check if user is already logged in on app load
   useEffect(() => {
     const loadUserFromStorage = async () => {
       try {
         const storedUser = await AsyncStorage.getItem('user');
-        if (storedUser) {
+        if (storedUser && isMounted.current) {
           setUser(JSON.parse(storedUser));
         }
       } catch (error) {
         console.error('Error loading user from storage:', error);
       } finally {
-        setLoading(false);
+        if (isMounted.current) {
+          setLoading(false);
+        }
       }
     };
 
@@ -58,108 +68,136 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Sign in function
   const signIn = async (email: string, password: string): Promise<boolean> => {
     try {
-      setLoading(true);
-      setError(null);
-
-      // In a real app, this would be an API call to your auth server
-      // Simulate successful login
-      if (email && password) {
-        // Simulate validating credentials
-        // For demo purposes, we'll accept any non-empty values
-        
-        // Create a mock user object
-        const userData: User = {
-          id: '123456',
-          email: email,
-          name: email.split('@')[0], // Use part of email as name for demo
-        };
-        
-        // Store user in state and AsyncStorage
-        setUser(userData);
-        await AsyncStorage.setItem('user', JSON.stringify(userData));
-        
-        return true;
-      } else {
-        setError('Please provide both email and password');
+      if (isMounted.current) {
+        setLoading(true);
+        setError(null);
+      }
+      
+      // Validate inputs
+      if (!email || !password) {
+        if (isMounted.current) {
+          setError('Please provide both email and password');
+        }
         return false;
       }
+      
+      // Call the API for authentication (mocked for now)
+      // In a real app, you would make an API call to your auth service
+      if (email === 'user@example.com' && password === 'password123') {
+        const userData: User = {
+          id: '123',
+          email,
+          name: 'Demo User',
+        };
+        
+        if (isMounted.current) {
+          setUser(userData);
+        }
+        await AsyncStorage.setItem('user', JSON.stringify(userData));
+        return true;
+      }
+      
+      if (isMounted.current) {
+        setError('Failed to sign in. Please try again.');
+      }
+      return false;
     } catch (error) {
-      console.error('Sign in error:', error);
-      setError('Failed to sign in. Please try again.');
+      console.error('Error during sign in:', error);
+      if (isMounted.current) {
+        setError('Failed to sign in. Please try again.');
+      }
       return false;
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
   // Sign up function
-  const signUp = async (email: string, password: string, name: string): Promise<boolean> => {
+  const signUp = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
-      setLoading(true);
-      setError(null);
+      if (isMounted.current) {
+        setLoading(true);
+        setError(null);
+      }
       
-      // In a real app, this would be an API call to your auth server
-      // Simulate successful registration
-      if (email && password && name) {
-        // Create a mock user object
-        const userData: User = {
-          id: '123456',
-          email: email,
-          name: name,
-        };
-        
-        // Store user in state and AsyncStorage
-        setUser(userData);
-        await AsyncStorage.setItem('user', JSON.stringify(userData));
-        
-        return true;
-      } else {
-        setError('Please provide all required information');
+      // Validate inputs
+      if (!name || !email || !password) {
+        if (isMounted.current) {
+          setError('Please provide all required information');
+        }
         return false;
       }
+      
+      // Call the API for user creation (mocked for now)
+      // In a real app, you would make an API call to your auth service
+      const userData: User = {
+        id: '123',
+        email,
+        name,
+      };
+      
+      if (isMounted.current) {
+        setUser(userData);
+      }
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      return true;
     } catch (error) {
-      console.error('Sign up error:', error);
-      setError('Failed to sign up. Please try again.');
+      console.error('Error during sign up:', error);
+      if (isMounted.current) {
+        setError('Failed to sign up. Please try again.');
+      }
       return false;
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
   // Sign out function
   const signOut = async (): Promise<void> => {
     try {
-      // Clear user from state and storage
-      setUser(null);
       await AsyncStorage.removeItem('user');
-      
-      // In a real app, you would also make an API call to invalidate tokens
+      if (isMounted.current) {
+        setUser(null);
+      }
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('Error during sign out:', error);
     }
   };
 
   // Reset password function
   const resetPassword = async (email: string): Promise<boolean> => {
     try {
-      setLoading(true);
-      setError(null);
+      if (isMounted.current) {
+        setLoading(true);
+        setError(null);
+      }
       
-      // In a real app, this would trigger a password reset email
-      if (email) {
-        // Simulate sending a password reset email
-        console.log(`Password reset requested for: ${email}`);
-        return true;
-      } else {
-        setError('Please provide an email address');
+      // Validate input
+      if (!email) {
+        if (isMounted.current) {
+          setError('Please provide an email address');
+        }
         return false;
       }
+      
+      // Mock password reset request
+      // In a real app, you would make an API call to your auth service
+      console.log(`Password reset requested for email: ${email}`);
+      return true;
     } catch (error) {
-      console.error('Reset password error:', error);
-      setError('Failed to request password reset. Please try again.');
+      console.error('Error during password reset:', error);
+      if (isMounted.current) {
+        setError('Failed to request password reset. Please try again.');
+      }
       return false;
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 

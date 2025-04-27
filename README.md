@@ -1,112 +1,82 @@
-# CircohBack Mobile App
+# CircohBack
 
-CircohBack is a mobile application designed to help users maintain meaningful connections with their important contacts.
+CircohBack is a relationship management mobile app that helps users maintain connections with important contacts through reminders, AI messaging, and tracking.
 
 ## Features
 
-- Authentication with Supabase
-- Contact management
-- Reminder system for periodic check-ins
-- Personalized connection schedules
-- Activity tracking and analytics
-
-## Environment Setup
-
-This app requires environment variables to connect to Supabase. Create a `.env` file in the root directory with the following variables:
-
-```
-EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-Default values are provided in the `app/core/config/env.ts` file for development purposes.
+- Contact management with birthdays and location tracking
+- Smart reminders for birthdays and regular check-ins
+- Travel planning with location-based friend finder
+- User profiles with subscription management
+- Premium features for enhanced relationship management
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v18+)
-- Yarn or npm
+- Node.js 14+ 
+- npm or yarn
 - Expo CLI
-- Supabase account
 
 ### Installation
 
-1. Clone the repository
+1. Clone the repository:
+
+```bash
+git clone https://github.com/your-username/CircohBack.git
+cd CircohBack
+```
+
 2. Install dependencies:
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
-3. Create a `.env` file with your Supabase credentials (see Environment Setup)
-4. Start the development server:
-   ```bash
-   npm start
-   # or
-   yarn start
-   ```
+
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Start the development server:
+
+```bash
+npx expo start
+```
+
+## Supabase Configuration
+
+The app is configured to use Supabase for backend services. The connection is set up in `app/core/config/supabaseConfig.ts`.
+
+To test the Supabase connection:
+
+```bash
+# Run the test script
+npx ts-node scripts/testSupabaseConnection.ts
+```
 
 ## Project Structure
 
-- `app/` - Main application code
-  - `(auth)/` - Authentication screens
-  - `(tabs)/` - Main app tabs
-  - `core/` - Core functionality
-    - `config/` - Configuration files
-    - `constants/` - Application constants
-    - `providers/` - Context providers
-    - `store/` - Redux store
-    - `utils/` - Utility functions
+- **/app** - React Native application
+  - **/assets** - Images, fonts, and static resources
+  - **/components** - Reusable UI components
+  - **/core** - Core application logic
+    - **/config** - Configuration files
+    - **/hooks** - Custom React hooks
+    - **/services** - API and external service integrations
+    - **/store** - Redux state management
+    - **/types** - TypeScript type definitions
+    - **/utils** - Helper functions and utilities
+  - **/screens** - Application screens
+  - **/navigation** - Navigation configuration
 
-## Database Setup
+## Database Structure
 
-The application uses Supabase for database functionality. The database schema and sample data can be set up using the provided migration files.
+The database includes the following main tables:
 
-### Migrations and Seed Data
-
-1. Install the Supabase CLI:
-   ```bash
-   npm install -g supabase
-   ```
-
-2. Login to Supabase:
-   ```bash
-   supabase login
-   ```
-
-3. Set your Supabase project ID as an environment variable:
-   ```bash
-   export SUPABASE_PROJECT_ID=your_project_id
-   ```
-
-4. Run the migrations and seed script:
-   ```bash
-   ./supabase/apply_migrations.sh
-   ```
-
-This will create all the necessary tables and populate them with test data for development purposes.
-
-### Database Schema
-
-The application uses the following main tables:
-- `profiles` - Extended user information
-- `todos` - Task management
-- `categories` - Todo categorization
-- `habits` - Habit tracking
-- `mood_logs` - Mood tracking
-- `focus_sessions` - Focused work periods
-- `gratitude_entries` - Gratitude journal
-- `shared_todos` - Collaboration features
-
-## Technologies Used
-
-- React Native
-- Expo
-- Redux Toolkit
-- Supabase
-- Expo Router
+- **auth.users** - User authentication data
+- **profiles** - User profile information
+- **contacts** - User's contact list with birthday and location data
+- **reminders** - Reminders for birthdays, regular check-ins, etc.
+- **travel_plans** - Travel plans with location information
 
 ## License
 
-This project is licensed under the MIT License. 
+[MIT](LICENSE) 

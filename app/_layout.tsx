@@ -1,5 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -8,11 +8,7 @@ import 'react-native-reanimated';
 import AppProviders from './core/providers/AppProviders';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useColorScheme } from '@/components/useColorScheme';
-import { AuthProvider } from '../contexts/AuthContext';
-import { UserProvider } from '../contexts/UserContext';
 import { Text, View } from 'react-native';
-import { FontsToLoad } from '@/constants/Fonts';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -28,44 +24,40 @@ export const unstable_settings = {
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [fontError, setFontError] = useState<Error | null>(null);
+  const [isReady, setIsReady] = useState(false);
   
-  // Load fonts with error handling
+  // Load fonts
   const [loaded, error] = useFonts({
-    ...FontsToLoad,
     ...FontAwesome.font,
+    'SpaceMono-Regular': require('../assets/fonts/SpaceMono-Regular.ttf'),
+    'Montserrat-Regular': require('../assets/fonts/Montserrat-Regular.ttf'),
+    'Montserrat-Medium': require('../assets/fonts/Montserrat-Medium.ttf'),
+    'Montserrat-SemiBold': require('../assets/fonts/Montserrat-SemiBold.ttf'),
+    'Montserrat-Bold': require('../assets/fonts/Montserrat-Bold.ttf'),
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
-    if (error) {
-      console.error("Font loading error:", error);
-      setFontError(error);
+    async function prepare() {
+      try {
+        // Pre-load fonts, make any API calls you need to do here
+        if (loaded) {
+          // Hide splash screen
+          await SplashScreen.hideAsync();
+        }
+      } catch (e) {
+        console.warn('Error preparing app:', e);
+      } finally {
+        // Tell the application to render
+        setIsReady(true);
+      }
     }
-  }, [error]);
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync().catch(console.error);
-    }
+    prepare();
   }, [loaded]);
 
-  // Show a fallback UI if there's a font loading error
-  if (fontError) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <Text style={{ fontSize: 18, textAlign: 'center', marginBottom: 20 }}>
-          There was an issue loading the app's fonts. The app will continue with system fonts.
-        </Text>
-        <Text onPress={() => setFontError(null)} style={{ color: '#0066cc', fontSize: 16 }}>
-          Tap here to continue
-        </Text>
-      </View>
-    );
-  }
-
-  // Show a blank screen while fonts are loading
-  if (!loaded) {
+  // If the fonts aren't loaded and there hasn't been an error,
+  // show nothing to avoid flashing content
+  if (!loaded && !error) {
     return null;
   }
 
@@ -73,26 +65,19 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  // Always use dark mode as specified in the blueprint
-  const colorScheme = 'dark';
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <UserProvider>
-          <AppProviders>
-            <ThemeProvider value={DarkTheme}>
-              <StatusBar style="light" />
-              <Stack>
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
-                <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-              </Stack>
-            </ThemeProvider>
-          </AppProviders>
-        </UserProvider>
-      </AuthProvider>
+      <AppProviders>
+        <ThemeProvider value={DarkTheme}>
+          <StatusBar style="light" />
+          <Stack>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          </Stack>
+        </ThemeProvider>
+      </AppProviders>
     </GestureHandlerRootView>
   );
 }

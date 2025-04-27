@@ -78,7 +78,7 @@ export default function SubscriptionScreen() {
         [
           { 
             text: 'OK', 
-            onPress: () => router.push('/settings' as any) 
+            onPress: () => router.push('/settings/' as any) 
           }
         ]
       );

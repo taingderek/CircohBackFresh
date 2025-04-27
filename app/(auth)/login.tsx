@@ -19,10 +19,10 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useAppDispatch, useAppSelector } from '@/app/core/store/hooks';
-import { signIn, selectIsLoading, selectError } from '@/app/core/store/slices/authSlice';
+import { selectIsLoading, selectError } from '@/app/core/store/slices/authSlice';
+import { useSupabaseAuth } from '@/app/core/hooks/useSupabaseAuth';
 import { COLORS, SPACING, FONT_SIZES, EFFECTS } from '@/app/core/constants/theme';
 import { navigateToAuth } from '@/app/core/utils/navigationUtils';
-import { useAuth } from '../../contexts/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -31,10 +31,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const dispatch = useAppDispatch();
-  const isLoading = useAppSelector(selectIsLoading);
-  const error = useAppSelector(selectError);
-  const { signIn: authSignIn } = useAuth();
+  const { signIn, isLoading, error } = useSupabaseAuth();
 
   // Handle login
   const handleLogin = async () => {
@@ -47,7 +44,7 @@ export default function LoginScreen() {
     }
     
     setIsSubmitting(true);
-    const success = await authSignIn(email, password);
+    const success = await signIn(email, password);
     setIsSubmitting(false);
 
     if (success) {

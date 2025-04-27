@@ -1,0 +1,149 @@
+# CircohBack Development Rules (.cursorrules)
+
+## Project Overview
+- CircohBack is a relationship management mobile app built with React Native, Supabase, and TypeScript
+- The app helps users maintain connections with important contacts through reminders, AI messaging, and tracking
+- Project follows a freemium model with clear feature gates between free and premium tiers
+
+## Code Organization Guidelines
+
+### Directory Structure
+- Maintain strict feature-based organization
+- /app - React Native application
+  - /assets - Images, fonts, and static resources
+  - /components - Reusable UI components
+    - /common - Shared UI elements (Button, Card, Input)
+    - /[feature] - Feature-specific components
+  - /screens - Application screens organized by feature
+  - /navigation - Navigation configuration
+  - /services - API and external service integrations
+  - /store - Redux state management
+  - /utils - Helper functions and utilities
+  - /constants - App-wide constants and configs
+  - /hooks - Custom React hooks
+- /supabase - Backend configuration and migrations
+
+### File Naming & Imports
+- Use PascalCase for components: Button.tsx, ContactCard.tsx
+- Use camelCase for utilities and services: contactService.ts, formatDate.ts
+- Group related imports, separate third-party from local imports
+- Prefer absolute imports using tsconfig paths
+
+## TypeScript Guidelines
+
+### Type Definitions
+- Create dedicated types/ files for complex interfaces
+- Export all shared types from a central index
+- Always define proper return types for functions
+- Use TypeScript's utility types when appropriate (Pick, Omit, etc.)
+
+### Type Safety
+- Avoid use of 'any' type - use unknown with type guards instead
+- Create union types for state enums: type Status = 'idle' | 'loading' | 'success' | 'error'
+- Define typed hooks for data access: useContact(id: string): Contact | undefined
+
+## Component Development
+
+### Best Practices
+- Use functional components with hooks exclusively
+- Extract complex logic to custom hooks
+- Keep components focused on a single responsibility
+- Implement proper loading and error states for async operations
+- Enforce prop validation with TypeScript interfaces
+
+### Performance Considerations
+- Use React.memo for pure components
+- Implement useMemo and useCallback for expensive calculations and functions
+- Use virtualized lists (FlatList) for rendering large datasets
+- Proper key management in list rendering
+- Avoid anonymous function creation in render methods
+
+## State Management
+
+### Redux Guidelines
+- Organize store by feature slices
+- Normalize complex relational data
+- Use Redux Toolkit for actions and reducers
+- Implement selectors for computed values
+- Handle side effects with Thunk middleware
+
+### Local State
+- Use useState for component-specific state
+- Apply useReducer for complex local state logic
+- Utilize context for theme and authentication state
+- Cache frequently used data with proper invalidation
+
+## UI Design Implementation
+
+### Color System
+- Primary Dark: #121212 (main background)
+- Secondary Dark: #1E1E1E (cards, elements)
+- Accent Mint: #32FFA5 (primary accent)
+- Accent Lavender: #BE93FD (secondary accent)
+- Accent Pink: #FF93B9 (tertiary accent)
+- Text Primary: #FFFFFF
+- Text Secondary: #B0B0B0
+- Text Muted: #707070
+
+### Component Variants
+- Implement consistent variants across components (primary, secondary, outline)
+- Support light/dark theme toggle with appropriate contrast
+- Maintain accessibility standards (touch targets, contrast ratios)
+- Use tailwind-rn for styling with custom theme extension
+
+## Feature Implementation Rules
+
+### Authentication & Onboarding
+- Implement complete authentication flow (register, login, recovery)
+- Store tokens securely using secure storage
+- Handle token refresh and expiration
+- Create step-by-step onboarding with state persistence
+
+### Contact Management
+- Implement permission handling for contacts access
+- Provide manual fallback for permission denial
+- Support contact searching, filtering, and categorization
+- Sync with device contacts while respecting privacy
+
+### Reminder System
+- Schedule local notifications for reminders
+- Support multiple reminder frequencies based on subscription tier
+- Implement snooze and completion functionality
+- Track reminder history and completion rate
+
+### AI Messaging
+- Integrate with external AI service
+- Maintain message quotas for free tier users
+- Implement tone selection with premium restrictions
+- Support message editing and sharing
+
+### Subscription Management
+- Integrate with Stripe for payment processing
+- Manage trial periods with appropriate notifications
+- Gate premium features based on subscription status
+- Handle subscription state changes and renewals
+
+## Error Prevention
+
+### Common AI Mistakes to Avoid
+- NEVER generate new files that already exist without checking
+- ALWAYS scan the project structure before suggesting file creation
+- DO NOT invent new components or services without checking if they exist
+- CONSISTENTLY use established naming conventions and patterns
+- VERIFY import paths before suggesting code changes
+- MAINTAIN state management patterns consistently
+- DO NOT switch between styling approaches (stick with tailwind-rn)
+
+### Code Quality
+- Maintain consistent error handling patterns
+- Implement proper input validation
+- Add meaningful comments for complex logic
+- Follow established patterns in the codebase
+- Document all external service integrations
+
+## Testing & Quality Assurance
+- Write unit tests for business logic
+- Implement component tests for UI elements
+- Add integration tests for critical user flows
+- Test offline functionality and error cases
+- Verify performance on lower-end devices
