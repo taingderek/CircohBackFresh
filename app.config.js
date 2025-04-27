@@ -7,11 +7,11 @@ module.exports = {
   slug: "circohback",
   version: "1.0.0",
   orientation: "portrait",
-  icon: "./assets/images/icon.png",
+  icon: "./assets/icon.png",
   scheme: "myapp",
   userInterfaceStyle: "automatic",
   splash: {
-    image: "./assets/images/splash.png",
+    image: "./assets/splash.png",
     resizeMode: "contain",
     backgroundColor: "#121212"
   },
@@ -24,14 +24,14 @@ module.exports = {
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: "./assets/images/adaptive-icon.png",
+      foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#121212"
     },
     package: "com.circohback.app"
   },
   web: {
     bundler: "metro",
-    favicon: "./assets/images/favicon.png"
+    favicon: "./assets/favicon.png"
   },
   extra: {
     // Add Supabase configuration from env
@@ -43,5 +43,7 @@ module.exports = {
   },
   plugins: [
     "expo-router"
-  ]
+  ],
+  // Explicitly enable React Native's New Architecture as recommended
+  newArchEnabled: true
 }; 

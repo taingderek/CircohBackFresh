@@ -74,6 +74,14 @@ function RootLayoutNav() {
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+            <Stack.Screen name="(stack)" options={{ headerShown: false }} />
+            <Stack.Screen name="screens/streaks/StreaksScreen" options={{ 
+              title: "Streaks",
+              headerStyle: {
+                backgroundColor: '#121212',
+              },
+              headerTintColor: '#fff',
+            }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           </Stack>
         </ThemeProvider>

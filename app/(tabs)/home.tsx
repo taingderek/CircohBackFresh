@@ -15,6 +15,7 @@ import NotificationPanel, { Notification } from '@/app/components/notifications/
 import { GrowthScoreDisplay } from '@/app/features/growth-score';
 import { useGrowthScore } from '@/app/features/growth-score';
 import LevelUpModal from '@/app/features/growth-score/LevelUpModal';
+import StreakCounter from '@/app/components/streaks/StreakCounter';
 
 export default function HomeScreen() {
   const [userName, setUserName] = useState('John Doe');
@@ -22,6 +23,7 @@ export default function HomeScreen() {
   const [isNotificationPanelVisible, setIsNotificationPanelVisible] = useState(false);
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [previousLevel, setPreviousLevel] = useState(1);
+  const [bestStreak, setBestStreak] = useState(5); // Example data
   
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -72,6 +74,11 @@ export default function HomeScreen() {
   // Navigate to score details screen
   const handleScorePress = () => {
     router.push('/growth-score');
+  };
+
+  // Navigate to streaks screen
+  const handleStreaksPress = () => {
+    router.push('/screens/streaks/StreaksScreen');
   };
 
   // Example of notification icon in right actions
@@ -152,6 +159,28 @@ export default function HomeScreen() {
               </View>
             </View>
           </View>
+
+          {/* Streaks Card - Added to home screen */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Relationship Streaks</Text>
+              <Icon name="flame" size={20} color={COLORS.SECONDARY} />
+            </View>
+            <View style={styles.streakCardContent}>
+              <StreakCounter count={bestStreak} size="medium" />
+              <View style={styles.streakTextContainer}>
+                <Text style={styles.cardText}>
+                  Your best active streak is {bestStreak} days! Keep it going.
+                </Text>
+                <TouchableOpacity 
+                  style={styles.cardButton}
+                  onPress={handleStreaksPress}
+                >
+                  <Text style={styles.cardButtonText}>View All Streaks</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
           
           {/* Sample card content */}
           <View style={styles.card}>
@@ -179,7 +208,7 @@ export default function HomeScreen() {
             </Text>
             <TouchableOpacity 
               style={styles.cardButton}
-              onPress={() => console.log('Manage Reminders pressed')}
+              onPress={() => router.push('/reminders')}
             >
               <Text style={styles.cardButtonText}>Manage Reminders</Text>
             </TouchableOpacity>
@@ -248,16 +277,16 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.MEDIUM,
   },
   viewDetailsButton: {
+    backgroundColor: COLORS.PRIMARY,
     paddingVertical: SPACING.SMALL,
     paddingHorizontal: SPACING.MEDIUM,
-    backgroundColor: COLORS.PRIMARY + '20',
-    borderRadius: BORDER_RADIUS.MEDIUM,
+    borderRadius: BORDER_RADIUS.SMALL,
     alignSelf: 'flex-start',
   },
   viewDetailsText: {
-    fontSize: FONT_SIZES.SMALL,
+    color: COLORS.BACKGROUND,
     fontFamily: FONT_FAMILIES.MEDIUM,
-    color: COLORS.PRIMARY,
+    fontSize: FONT_SIZES.SMALL,
   },
   score: {
     fontSize: 48,
@@ -280,7 +309,6 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: SPACING.SMALL,
-    borderRadius: BORDER_RADIUS.ROUND,
     position: 'relative',
   },
   notificationBadge: {
@@ -288,28 +316,28 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
     backgroundColor: COLORS.ERROR,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   badgeText: {
-    color: COLORS.WHITE,
+    color: COLORS.BACKGROUND,
     fontSize: 10,
     fontFamily: FONT_FAMILIES.BOLD,
   },
   card: {
     backgroundColor: COLORS.CARD,
     borderRadius: 16,
-    padding: SPACING.MEDIUM,
-    marginBottom: SPACING.MEDIUM,
+    padding: SPACING.LARGE,
+    marginBottom: SPACING.LARGE,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.SMALL,
+    marginBottom: SPACING.MEDIUM,
   },
   cardTitle: {
     fontSize: FONT_SIZES.MEDIUM,
@@ -323,14 +351,25 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.MEDIUM,
   },
   cardButton: {
-    backgroundColor: COLORS.PRIMARY + '20',
-    padding: SPACING.SMALL,
-    borderRadius: BORDER_RADIUS.MEDIUM,
-    alignItems: 'center',
+    backgroundColor: 'transparent',
+    paddingVertical: SPACING.SMALL,
+    paddingHorizontal: 0,
+    borderRadius: BORDER_RADIUS.SMALL,
+    alignSelf: 'flex-start',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.PRIMARY,
   },
   cardButtonText: {
     color: COLORS.PRIMARY,
-    fontSize: FONT_SIZES.SMALL,
     fontFamily: FONT_FAMILIES.MEDIUM,
+    fontSize: FONT_SIZES.SMALL,
+  },
+  streakCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  streakTextContainer: {
+    flex: 1,
+    marginLeft: SPACING.MEDIUM,
   },
 }); 

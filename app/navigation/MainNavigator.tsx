@@ -39,6 +39,8 @@ export type RootStackParamList = {
   Main: NavigatorScreenParams<TabParamList>;
   // Add other root-level screens here as needed
   Modal: undefined;
+  Reviews: undefined;
+  Streaks: undefined;
 };
 
 // Create tab navigator

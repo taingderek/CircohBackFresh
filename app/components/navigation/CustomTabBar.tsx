@@ -85,6 +85,12 @@ const CustomTabBar = React.memo(({
     const { options } = descriptors[route.key];
     const isFocused = state.index === index;
     
+    // Check if the tab configuration exists
+    if (!TAB_CONFIG[key]) {
+      console.warn(`Tab configuration missing for ${key}`);
+      return null;
+    }
+    
     // Tab press handler
     const onPress = () => {
       const event = navigation.emit({
