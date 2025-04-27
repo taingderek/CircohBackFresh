@@ -21,6 +21,8 @@ import messagingReducer from './slices/messagingSlice';
 import subscriptionReducer from './slices/subscriptionSlice';
 import scoreReducer from './slices/scoreSlice';
 import travelReducer from './slices/travelSlice';
+import notificationReducer from './slices/notificationSlice';
+import growthScoreReducer from '../../features/growth-score/growthScoreSlice';
 // These will be implemented later:
 // import messagingReducer from './slices/messagingSlice';
 // import subscriptionReducer from './slices/subscriptionSlice';
@@ -56,6 +58,18 @@ const travelPersistConfig = {
   whitelist: ['travelPlans'],
 };
 
+const notificationPersistConfig = {
+  key: 'notifications',
+  storage: AsyncStorage,
+  whitelist: ['notifications'],
+};
+
+const growthScorePersistConfig = {
+  key: 'growthScore',
+  storage: AsyncStorage,
+  whitelist: ['activities', 'streaks', 'achievements'],
+};
+
 // Combine all reducers
 const rootReducer = combineReducers({
   auth: persistReducer(authPersistConfig, authReducer),
@@ -66,6 +80,8 @@ const rootReducer = combineReducers({
   subscription: subscriptionReducer,
   score: scoreReducer,
   travel: persistReducer(travelPersistConfig, travelReducer),
+  notifications: persistReducer(notificationPersistConfig, notificationReducer),
+  growthScore: persistReducer(growthScorePersistConfig, growthScoreReducer),
   // These will be added as we implement them:
   // messaging: messagingReducer,
   // subscription: subscriptionReducer,
@@ -91,7 +107,13 @@ export const store = configureStore({
         // Ignore these field paths in all actions
         ignoredActionPaths: ['meta.arg', 'payload.timestamp', 'register'],
         // Ignore these paths in the state
-        ignoredPaths: ['auth.user.created_at', 'auth.user.updated_at'],
+        ignoredPaths: [
+          'auth.user.created_at', 
+          'auth.user.updated_at',
+          'growthScore.levelProgress',
+          'growthScore.activities',
+          'growthScore.lastUpdateTime'
+        ],
       },
     }),
 });

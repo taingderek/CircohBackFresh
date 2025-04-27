@@ -1,31 +1,94 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Stack, Link } from 'expo-router';
+import { Stack, Link, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, SPACING, FONT_SIZES, FONT_FAMILIES } from '@/app/core/constants/theme';
+import { COLORS, SPACING, FONT_SIZES, FONT_FAMILIES, BORDER_RADIUS } from '@/app/core/constants/theme';
 import HeaderWithAvatar from '@/app/components/navigation/HeaderWithAvatar';
 import Icon from '@/app/components/common/Icon';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '@/app/core/store';
+import { 
+  markNotificationAsRead, 
+  markAllNotificationsAsRead 
+} from '@/app/core/store/slices/notificationSlice';
+import NotificationPanel, { Notification } from '@/app/components/notifications/NotificationPanel';
+import { GrowthScoreDisplay } from '@/app/features/growth-score';
+import { useGrowthScore } from '@/app/features/growth-score';
+import LevelUpModal from '@/app/features/growth-score/LevelUpModal';
 
 export default function HomeScreen() {
   const [userName, setUserName] = useState('John Doe');
   const [avatarUri, setAvatarUri] = useState('https://randomuser.me/api/portraits/men/32.jpg');
+  const [isNotificationPanelVisible, setIsNotificationPanelVisible] = useState(false);
+  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [previousLevel, setPreviousLevel] = useState(1);
+  
+  const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+  
+  // Get growth score data
+  const { 
+    totalScore, 
+    levelProgress, 
+    currentLevel,
+    levelTitle 
+  } = useGrowthScore();
+  
+  // Get notifications from Redux store
+  const { notifications, hasUnreadNotifications } = useSelector(
+    (state: RootState) => state.notifications
+  );
+
+  // Check for level up
+  useEffect(() => {
+    // Check if this is not initial render and if level has increased
+    if (previousLevel !== 0 && currentLevel > previousLevel) {
+      setShowLevelUpModal(true);
+    }
+    
+    // Update previous level
+    setPreviousLevel(currentLevel);
+  }, [currentLevel, previousLevel]);
 
   const handleAvatarPress = () => {
-    // Just console log for now - we'll handle navigation in the onAvatarPress prop
-    console.log('Avatar pressed from home screen');
+    // Navigate to the profile screen
+    router.push('/profile');
+  };
+
+  // Function to handle notification press
+  const handleNotificationPress = (notification: Notification) => {
+    // Mark the notification as read
+    dispatch(markNotificationAsRead(notification.id));
+    
+    // Close the notification panel
+    setIsNotificationPanelVisible(false);
+    
+    // Navigate to the link if provided
+    if (notification.link) {
+      router.push(notification.link);
+    }
+  };
+
+  // Navigate to score details screen
+  const handleScorePress = () => {
+    router.push('/growth-score');
   };
 
   // Example of notification icon in right actions
   const renderRightActions = () => (
     <TouchableOpacity 
       style={styles.iconButton}
-      onPress={() => console.log('Notifications pressed')}
+      onPress={() => setIsNotificationPanelVisible(true)}
     >
       <Icon name="notifications-outline" size={24} color={COLORS.TEXT} />
-      {/* Notification badge */}
-      <View style={styles.notificationBadge}>
-        <Text style={styles.badgeText}>3</Text>
-      </View>
+      {/* Notification badge - only show if there are unread notifications */}
+      {hasUnreadNotifications && (
+        <View style={styles.notificationBadge}>
+          <Text style={styles.badgeText}>
+            {notifications.filter(n => !n.read).length}
+          </Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 
@@ -44,6 +107,25 @@ export default function HomeScreen() {
         onAvatarPress={handleAvatarPress}
       />
       
+      {/* Notification Panel */}
+      <NotificationPanel
+        visible={isNotificationPanelVisible}
+        onClose={() => setIsNotificationPanelVisible(false)}
+        notifications={notifications}
+        onMarkAllAsRead={() => dispatch(markAllNotificationsAsRead())}
+        onNotificationPress={handleNotificationPress}
+      />
+      
+      {/* Level Up Modal */}
+      <LevelUpModal
+        visible={showLevelUpModal}
+        onClose={() => setShowLevelUpModal(false)}
+        previousLevel={previousLevel as any}
+        newLevel={currentLevel}
+        newTitle={levelTitle}
+        color={levelProgress.color}
+      />
+      
       {/* Content */}
       <ScrollView style={styles.content}>
         <View style={styles.section}>
@@ -51,12 +133,24 @@ export default function HomeScreen() {
           <Text style={styles.sectionSubtitle}>Keep your connections strong!</Text>
           
           <View style={styles.scoreCard}>
-            <Text style={styles.scoreTitle}>CircohBack Score</Text>
-            <Text style={styles.score}>750</Text>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: '75%' }]} />
+            <Text style={styles.scoreTitle}>Growth Score</Text>
+            <View style={styles.scoreContainer}>
+              <GrowthScoreDisplay size="large" onPress={handleScorePress} />
+              <View style={styles.scoreTextContainer}>
+                <Text style={styles.scoreSubtitle}>
+                  Level {currentLevel}: {levelTitle}
+                </Text>
+                <Text style={styles.scoreText}>
+                  {Math.round(levelProgress.progressPercentage)}% to Level {currentLevel + 1}
+                </Text>
+                <TouchableOpacity 
+                  style={styles.viewDetailsButton}
+                  onPress={handleScorePress}
+                >
+                  <Text style={styles.viewDetailsText}>View Details</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <Text style={styles.scoreSubtitle}>Great consistency! Keep it up.</Text>
           </View>
           
           {/* Sample card content */}
@@ -124,13 +218,46 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: SPACING.LARGE,
     marginBottom: SPACING.LARGE,
-    alignItems: 'center',
   },
   scoreTitle: {
     fontSize: FONT_SIZES.MEDIUM,
-    fontFamily: FONT_FAMILIES.MEDIUM,
+    fontFamily: FONT_FAMILIES.SEMIBOLD,
+    color: COLORS.TEXT,
+    marginBottom: SPACING.MEDIUM,
+    textAlign: 'center',
+  },
+  scoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  scoreTextContainer: {
+    flex: 1,
+    marginLeft: SPACING.LARGE,
+  },
+  scoreSubtitle: {
+    fontSize: FONT_SIZES.MEDIUM,
+    fontFamily: FONT_FAMILIES.SEMIBOLD,
     color: COLORS.TEXT,
     marginBottom: SPACING.SMALL,
+  },
+  scoreText: {
+    fontSize: FONT_SIZES.SMALL,
+    fontFamily: FONT_FAMILIES.REGULAR,
+    color: COLORS.TEXT_SECONDARY,
+    marginBottom: SPACING.MEDIUM,
+  },
+  viewDetailsButton: {
+    paddingVertical: SPACING.SMALL,
+    paddingHorizontal: SPACING.MEDIUM,
+    backgroundColor: COLORS.PRIMARY + '20',
+    borderRadius: BORDER_RADIUS.MEDIUM,
+    alignSelf: 'flex-start',
+  },
+  viewDetailsText: {
+    fontSize: FONT_SIZES.SMALL,
+    fontFamily: FONT_FAMILIES.MEDIUM,
+    color: COLORS.PRIMARY,
   },
   score: {
     fontSize: 48,
@@ -151,11 +278,26 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.PRIMARY,
     borderRadius: 4,
   },
-  scoreSubtitle: {
-    fontSize: FONT_SIZES.SMALL,
-    fontFamily: FONT_FAMILIES.REGULAR,
-    color: COLORS.TEXT_SECONDARY,
-    textAlign: 'center',
+  iconButton: {
+    padding: SPACING.SMALL,
+    borderRadius: BORDER_RADIUS.ROUND,
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: COLORS.ERROR,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: COLORS.WHITE,
+    fontSize: 10,
+    fontFamily: FONT_FAMILIES.BOLD,
   },
   card: {
     backgroundColor: COLORS.CARD,
@@ -181,34 +323,14 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.MEDIUM,
   },
   cardButton: {
-    backgroundColor: 'transparent',
-    alignSelf: 'flex-start',
-    paddingVertical: SPACING.TINY,
-    paddingHorizontal: 0,
-  },
-  cardButtonText: {
-    fontSize: FONT_SIZES.SMALL,
-    fontFamily: FONT_FAMILIES.MEDIUM,
-    color: COLORS.PRIMARY,
-  },
-  iconButton: {
-    padding: SPACING.TINY,
-    position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    right: -2,
-    top: -2,
-    backgroundColor: COLORS.ACCENT,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
+    backgroundColor: COLORS.PRIMARY + '20',
+    padding: SPACING.SMALL,
+    borderRadius: BORDER_RADIUS.MEDIUM,
     alignItems: 'center',
   },
-  badgeText: {
-    color: COLORS.WHITE,
-    fontSize: 10,
-    fontFamily: FONT_FAMILIES.BOLD,
+  cardButtonText: {
+    color: COLORS.PRIMARY,
+    fontSize: FONT_SIZES.SMALL,
+    fontFamily: FONT_FAMILIES.MEDIUM,
   },
 }); 
