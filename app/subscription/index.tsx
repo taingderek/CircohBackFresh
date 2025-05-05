@@ -1,407 +1,512 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
-  ActivityIndicator, 
-  Alert 
-} from 'react-native';
-import { Stack, router } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons';
-import { useAuth } from '../../contexts/AuthContext';
-import { useUser } from '../../contexts/UserContext';
-import { addSubscription } from '../../services/api';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SPACING, FONT_SIZES, FONT_FAMILIES, BORDER_RADIUS, EFFECTS } from '@/app/core/constants/theme';
 
 export default function SubscriptionScreen() {
-  const { user } = useAuth();
-  const { isPremium } = useUser();
-  const [loading, setLoading] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
+  const router = useRouter();
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Plans details
-  const plans = {
-    monthly: { 
-      id: 'monthly_premium', 
-      name: 'Monthly Premium', 
-      price: '$4.99', 
-      period: 'month', 
-      features: [
-        'Unlimited contacts',
-        'Daily reminder frequency',
-        'Contact categories',
-        'Export and backup',
-        'Premium support'
-      ]
-    },
-    yearly: { 
-      id: 'yearly_premium', 
-      name: 'Yearly Premium', 
-      price: '$49.99', 
-      period: 'year',
-      discount: 'Save 16%',
-      features: [
-        'All monthly features',
-        'Priority support',
-        'Advanced analytics',
-        'Early access to new features'
-      ]
-    }
-  };
+  // Calculate subscription details
+  const monthlyPrice = 7.99;
+  const yearlyMonthlyPrice = 5.00;
+  const yearlyPrice = yearlyMonthlyPrice * 12;
+  const annualSavings = (monthlyPrice * 12) - yearlyPrice;
+  const annualSavingsPercentage = Math.round((annualSavings / (monthlyPrice * 12)) * 100);
 
   // Handle subscription purchase
   const handleSubscribe = async () => {
-    if (!user) return;
-    
+    setIsLoading(true);
     try {
-      setLoading(true);
+      // In a real app, call your payment processor
+      // await purchaseSubscription(selectedPlan);
       
-      // In a real app, this would integrate with your payment processor
-      // For now, we'll simulate a successful subscription
-      const plan = plans[selectedPlan];
-      
-      // Mock subscription data
-      const subscriptionData = {
-        plan_id: plan.id,
-        status: 'active',
-        start_date: new Date().toISOString(),
-        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 days
-        auto_renew: true
-      };
-      
-      await addSubscription(user.id, subscriptionData);
-      
-      Alert.alert(
-        'Subscription Activated',
-        `You are now subscribed to ${plan.name}. Thank you for your support!`,
-        [
-          { 
-            text: 'OK', 
-            onPress: () => router.push('/settings/' as any) 
-          }
-        ]
-      );
+      // Mock purchase flow
+      setTimeout(() => {
+        Alert.alert(
+          'Subscription Successful!',
+          `Thank you for upgrading to CircohBack Premium ${selectedPlan === 'monthly' ? 'Monthly' : 'Annual'} plan. Enjoy your enhanced experience!`,
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+        setIsLoading(false);
+      }, 1500);
     } catch (error) {
-      console.error('Error processing subscription:', error);
-      Alert.alert('Error', 'Failed to process subscription. Please try again later.');
-    } finally {
-      setLoading(false);
+      Alert.alert('Error', 'Failed to process subscription. Please try again.');
+      setIsLoading(false);
     }
   };
-  
-  // If user is already premium, redirect to manage subscription
-  if (isPremium) {
-    return (
-      <View style={styles.container}>
-        <Stack.Screen options={{ title: 'Premium Subscription' }} />
-        
-        <View style={styles.centeredContainer}>
-          <FontAwesome name="check-circle" size={60} color="#4CAF50" style={styles.premiumIcon} />
-          <Text style={styles.premiumTitle}>You're a Premium Member!</Text>
-          <Text style={styles.premiumMessage}>
-            You already have an active premium subscription with all features unlocked.
-          </Text>
-          
-          <TouchableOpacity 
-            style={styles.manageButton}
-            onPress={() => router.push('/subscription/manage' as any)}
-          >
-            <Text style={styles.manageButtonText}>Manage Subscription</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backButtonText}>Back to Settings</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
+
+  // Toggle plan selection
+  const togglePlan = (plan: 'monthly' | 'yearly') => {
+    setSelectedPlan(plan);
+  };
+
+  // Render feature row
+  const renderFeature = (feature: string, isAvailable: boolean, isPremium: boolean = false) => (
+    <View style={styles.featureRow}>
+      <Ionicons 
+        name={isAvailable ? "checkmark-circle" : "close-circle"} 
+        size={20} 
+        color={isAvailable ? (isPremium ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY) : COLORS.ERROR} 
+      />
+      <Text style={[
+        styles.featureText, 
+        !isAvailable && styles.featureUnavailable,
+        isPremium && isAvailable && styles.premiumFeature
+      ]}>
+        {feature}
+      </Text>
+    </View>
+  );
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Upgrade to Premium' }} />
-      
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Unlock All Features</Text>
-          <Text style={styles.headerSubtitle}>
-            Choose a plan to get unlimited contacts and premium features
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={COLORS.TEXT} />
+        </TouchableOpacity>
+        <Text style={styles.title}>Premium Upgrade</Text>
+        <View style={styles.placeholder} />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.heroSection}>
+          <View style={styles.premiumIcon}>
+            <Ionicons name="diamond" size={40} color={COLORS.PRIMARY} />
+          </View>
+          <Text style={styles.heroTitle}>Unlock CircohBack Premium</Text>
+          <Text style={styles.heroSubtitle}>
+            Enhance your relationship management with advanced features
           </Text>
         </View>
-        
-        <View style={styles.plansContainer}>
-          {/* Monthly Plan */}
+
+        {/* Plan Selection */}
+        <View style={styles.planSelector}>
           <TouchableOpacity 
             style={[
-              styles.planCard, 
+              styles.planOption,
               selectedPlan === 'monthly' && styles.selectedPlan
             ]}
-            onPress={() => setSelectedPlan('monthly')}
+            onPress={() => togglePlan('monthly')}
           >
-            <View style={styles.planHeader}>
-              <Text style={styles.planName}>{plans.monthly.name}</Text>
-              <View style={styles.priceContainer}>
-                <Text style={styles.planPrice}>{plans.monthly.price}</Text>
-                <Text style={styles.planPeriod}>/{plans.monthly.period}</Text>
-              </View>
-            </View>
-            
-            <View style={styles.featuresContainer}>
-              {plans.monthly.features.map((feature, index) => (
-                <View key={index} style={styles.featureItem}>
-                  <FontAwesome name="check" size={14} color="#4CAF50" style={styles.featureIcon} />
-                  <Text style={styles.featureText}>{feature}</Text>
-                </View>
-              ))}
-            </View>
-            
-            {selectedPlan === 'monthly' && (
-              <View style={styles.selectedIndicator}>
-                <FontAwesome name="check-circle" size={24} color="#4CAF50" />
-              </View>
-            )}
+            <Text style={[
+              styles.planTitle,
+              selectedPlan === 'monthly' && styles.selectedPlanTitle
+            ]}>
+              Monthly
+            </Text>
+            <Text style={[
+              styles.planPrice,
+              selectedPlan === 'monthly' && styles.selectedPlanTitle
+            ]}>
+              ${monthlyPrice.toFixed(2)}
+            </Text>
+            <Text style={[
+              styles.planPriceSubtext,
+              selectedPlan === 'monthly' && styles.selectedPlanTitle
+            ]}>
+              per month
+            </Text>
           </TouchableOpacity>
-          
-          {/* Yearly Plan */}
-          <TouchableOpacity
+
+          <TouchableOpacity 
             style={[
-              styles.planCard, 
+              styles.planOption,
               selectedPlan === 'yearly' && styles.selectedPlan,
-              styles.bestValuePlan
+              styles.yearlyPlan
             ]}
-            onPress={() => setSelectedPlan('yearly')}
+            onPress={() => togglePlan('yearly')}
           >
             <View style={styles.bestValueBadge}>
-              <Text style={styles.bestValueText}>Best Value</Text>
+              <Text style={styles.bestValueText}>BEST VALUE</Text>
             </View>
-            
-            <View style={styles.planHeader}>
-              <Text style={styles.planName}>{plans.yearly.name}</Text>
-              <View style={styles.priceContainer}>
-                <Text style={styles.planPrice}>{plans.yearly.price}</Text>
-                <Text style={styles.planPeriod}>/{plans.yearly.period}</Text>
-              </View>
-              <Text style={styles.discountText}>{plans.yearly.discount}</Text>
-            </View>
-            
-            <View style={styles.featuresContainer}>
-              {plans.yearly.features.map((feature, index) => (
-                <View key={index} style={styles.featureItem}>
-                  <FontAwesome name="check" size={14} color="#4CAF50" style={styles.featureIcon} />
-                  <Text style={styles.featureText}>{feature}</Text>
-                </View>
-              ))}
-            </View>
-            
-            {selectedPlan === 'yearly' && (
-              <View style={styles.selectedIndicator}>
-                <FontAwesome name="check-circle" size={24} color="#4CAF50" />
-              </View>
-            )}
+            <Text style={[
+              styles.planTitle,
+              selectedPlan === 'yearly' && styles.selectedPlanTitle
+            ]}>
+              Annual
+            </Text>
+            <Text style={[
+              styles.planPrice,
+              selectedPlan === 'yearly' && styles.selectedPlanTitle
+            ]}>
+              ${yearlyMonthlyPrice.toFixed(2)}
+            </Text>
+            <Text style={[
+              styles.planPriceSubtext,
+              selectedPlan === 'yearly' && styles.selectedPlanTitle
+            ]}>
+              per month
+            </Text>
+            <Text style={styles.savingsText}>
+              Save {annualSavingsPercentage}% (2 months free)
+            </Text>
           </TouchableOpacity>
         </View>
-        
-        <TouchableOpacity
-          style={[styles.subscribeButton, loading && styles.loadingButton]}
+
+        <Text style={styles.summaryText}>
+          {selectedPlan === 'monthly' 
+            ? `$${monthlyPrice.toFixed(2)} will be charged monthly`
+            : `$${yearlyPrice.toFixed(2)} will be charged annually (save $${annualSavings.toFixed(2)})`
+          }
+        </Text>
+
+        {/* Features Comparison */}
+        <View style={styles.comparisonSection}>
+          <Text style={styles.comparisonTitle}>Features Comparison</Text>
+
+          <View style={styles.comparisonHeader}>
+            <Text style={styles.comparisonHeaderText}>Feature</Text>
+            <Text style={styles.comparisonHeaderText}>Free</Text>
+            <Text style={styles.comparisonHeaderText}>Premium</Text>
+          </View>
+
+          <View style={styles.comparisonTable}>
+            <View style={styles.comparisonRow}>
+              <Text style={styles.featureLabel}>Contact Import</Text>
+              <View style={styles.featureCell}>
+                <Text style={styles.featureCellText}>Limited (50)</Text>
+              </View>
+              <View style={styles.featureCell}>
+                <Text style={styles.featureCellText}>Unlimited</Text>
+              </View>
+            </View>
+
+            <View style={styles.comparisonRow}>
+              <Text style={styles.featureLabel}>Reminders</Text>
+              <View style={styles.featureCell}>
+                <Text style={styles.featureCellText}>Basic</Text>
+              </View>
+              <View style={styles.featureCell}>
+                <Text style={styles.featureCellText}>Advanced</Text>
+              </View>
+            </View>
+
+            <View style={styles.comparisonRow}>
+              <Text style={styles.featureLabel}>AI Message Generation</Text>
+              <View style={styles.featureCell}>
+                <Text style={styles.featureCellText}>5/month</Text>
+              </View>
+              <View style={styles.featureCell}>
+                <Text style={styles.featureCellText}>Unlimited</Text>
+              </View>
+            </View>
+
+            <View style={styles.comparisonRow}>
+              <Text style={styles.featureLabel}>Custom Categories</Text>
+              <View style={styles.featureCell}>
+                <Ionicons name="close" size={20} color={COLORS.ERROR} />
+              </View>
+              <View style={styles.featureCell}>
+                <Ionicons name="checkmark" size={20} color={COLORS.PRIMARY} />
+              </View>
+            </View>
+
+            <View style={styles.comparisonRow}>
+              <Text style={styles.featureLabel}>Reminder Frequency</Text>
+              <View style={styles.featureCell}>
+                <Text style={styles.featureCellText}>Basic</Text>
+              </View>
+              <View style={styles.featureCell}>
+                <Text style={styles.featureCellText}>Custom</Text>
+              </View>
+            </View>
+
+            <View style={styles.comparisonRow}>
+              <Text style={styles.featureLabel}>Detailed Analytics</Text>
+              <View style={styles.featureCell}>
+                <Ionicons name="close" size={20} color={COLORS.ERROR} />
+              </View>
+              <View style={styles.featureCell}>
+                <Ionicons name="checkmark" size={20} color={COLORS.PRIMARY} />
+              </View>
+            </View>
+
+            <View style={styles.comparisonRow}>
+              <Text style={styles.featureLabel}>CSV Export</Text>
+              <View style={styles.featureCell}>
+                <Ionicons name="close" size={20} color={COLORS.ERROR} />
+              </View>
+              <View style={styles.featureCell}>
+                <Ionicons name="checkmark" size={20} color={COLORS.PRIMARY} />
+              </View>
+            </View>
+
+            <View style={styles.comparisonRow}>
+              <Text style={styles.featureLabel}>Interactive Timeline</Text>
+              <View style={styles.featureCell}>
+                <Ionicons name="close" size={20} color={COLORS.ERROR} />
+              </View>
+              <View style={styles.featureCell}>
+                <Ionicons name="checkmark" size={20} color={COLORS.PRIMARY} />
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Subscribe Button */}
+        <TouchableOpacity 
+          style={[styles.subscribeButton, isLoading && styles.disabledButton]} 
           onPress={handleSubscribe}
-          disabled={loading}
+          disabled={isLoading}
         >
-          {loading ? (
-            <ActivityIndicator size="small" color="#FFF" />
+          {isLoading ? (
+            <ActivityIndicator color={COLORS.BLACK} />
           ) : (
             <Text style={styles.subscribeButtonText}>
-              Subscribe Now
+              {`Subscribe to Premium ${selectedPlan === 'monthly' ? 'Monthly' : 'Annual'}`}
             </Text>
           )}
         </TouchableOpacity>
-        
-        <Text style={styles.termsText}>
-          By subscribing, you agree to our Terms of Service and Privacy Policy. 
-          Subscriptions automatically renew until canceled.
-        </Text>
+
+        {/* Terms & Restoration */}
+        <View style={styles.termsSection}>
+          <Text style={styles.termsText}>
+            By subscribing, you agree to our Terms of Service. Your subscription will auto-renew until canceled.
+          </Text>
+          <TouchableOpacity onPress={() => Alert.alert('Restore Purchases', 'If you previously purchased a subscription, tap OK to restore your purchase.', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'OK', onPress: () => console.log('Restore purchases') }
+          ])}>
+            <Text style={styles.restoreText}>Restore Purchases</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollView: {
-    flex: 1,
+    backgroundColor: COLORS.BACKGROUND,
   },
   header: {
-    padding: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.MEDIUM,
+    paddingVertical: SPACING.MEDIUM,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.BORDER,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.CARD,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 24,
+  title: {
+    fontSize: FONT_SIZES.LARGE,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+    color: COLORS.TEXT,
   },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#666',
+  placeholder: {
+    width: 40,
+  },
+  content: {
+    padding: SPACING.MEDIUM,
+  },
+  heroSection: {
+    alignItems: 'center',
+    marginVertical: SPACING.LARGE,
+  },
+  premiumIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.CARD,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.MEDIUM,
+    ...EFFECTS.GLOW_PRIMARY,
+  },
+  heroTitle: {
+    fontSize: FONT_SIZES.XXXL,
+    fontWeight: 'bold',
+    color: COLORS.TEXT,
+    marginBottom: SPACING.SMALL,
     textAlign: 'center',
   },
-  plansContainer: {
-    padding: 16,
+  heroSubtitle: {
+    fontSize: FONT_SIZES.MEDIUM,
+    color: COLORS.TEXT_SECONDARY,
+    textAlign: 'center',
+    paddingHorizontal: SPACING.LARGE,
   },
-  planCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+  planSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: SPACING.LARGE,
+  },
+  planOption: {
+    flex: 1,
+    backgroundColor: COLORS.CARD,
+    borderRadius: BORDER_RADIUS.MEDIUM,
+    padding: SPACING.MEDIUM,
+    alignItems: 'center',
+    marginHorizontal: SPACING.TINY,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
   selectedPlan: {
-    borderWidth: 2,
-    borderColor: '#2196F3',
+    borderColor: COLORS.PRIMARY,
+    backgroundColor: 'rgba(50, 255, 165, 0.1)', // Semi-transparent primary color
   },
-  bestValuePlan: {
+  yearlyPlan: {
     position: 'relative',
-    paddingTop: 32,
+    paddingTop: SPACING.XLARGE, // Extra space for the best value badge
   },
   bestValueBadge: {
     position: 'absolute',
-    top: 0,
-    right: 20,
-    backgroundColor: '#FF9800',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
+    top: -10,
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: SPACING.SMALL,
+    paddingVertical: 3,
+    borderRadius: BORDER_RADIUS.SMALL,
   },
   bestValueText: {
-    color: 'white',
+    color: COLORS.BLACK,
+    fontSize: FONT_SIZES.XS,
     fontWeight: 'bold',
-    fontSize: 12,
   },
-  planHeader: {
-    marginBottom: 16,
-  },
-  planName: {
-    fontSize: 20,
+  planTitle: {
+    fontSize: FONT_SIZES.MEDIUM,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
+    color: COLORS.TEXT,
+    marginBottom: SPACING.SMALL,
   },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+  selectedPlanTitle: {
+    color: COLORS.PRIMARY,
   },
   planPrice: {
-    fontSize: 24,
+    fontSize: FONT_SIZES.XXL,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: COLORS.TEXT,
   },
-  planPeriod: {
-    fontSize: 16,
-    color: '#666',
-    marginLeft: 2,
+  planPriceSubtext: {
+    fontSize: FONT_SIZES.SMALL,
+    color: COLORS.TEXT_SECONDARY,
+    marginBottom: SPACING.SMALL,
   },
-  discountText: {
-    color: '#FF9800',
+  savingsText: {
+    fontSize: FONT_SIZES.XS,
+    color: COLORS.PRIMARY,
     fontWeight: 'bold',
-    marginTop: 4,
   },
-  featuresContainer: {
-    marginTop: 12,
+  summaryText: {
+    textAlign: 'center',
+    fontSize: FONT_SIZES.SMALL,
+    color: COLORS.TEXT_SECONDARY,
+    marginBottom: SPACING.LARGE,
   },
-  featureItem: {
+  comparisonSection: {
+    marginBottom: SPACING.LARGE,
+  },
+  comparisonTitle: {
+    fontSize: FONT_SIZES.LARGE,
+    fontWeight: 'bold',
+    color: COLORS.TEXT,
+    marginBottom: SPACING.MEDIUM,
+  },
+  comparisonHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingBottom: SPACING.SMALL,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.BORDER,
+  },
+  comparisonHeaderText: {
+    fontSize: FONT_SIZES.SMALL,
+    fontWeight: 'bold',
+    color: COLORS.TEXT,
+    flex: 1,
+    textAlign: 'center',
+  },
+  comparisonTable: {
+    marginTop: SPACING.SMALL,
+  },
+  comparisonRow: {
+    flexDirection: 'row',
+    paddingVertical: SPACING.SMALL,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.BORDER,
+  },
+  featureLabel: {
+    flex: 2,
+    fontSize: FONT_SIZES.SMALL,
+    color: COLORS.TEXT,
+    paddingRight: SPACING.SMALL,
+  },
+  featureCell: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureCellText: {
+    fontSize: FONT_SIZES.SMALL,
+    color: COLORS.TEXT_SECONDARY,
+    textAlign: 'center',
+  },
+  featureSection: {
+    marginBottom: SPACING.LARGE,
+  },
+  featureTitle: {
+    fontSize: FONT_SIZES.LARGE,
+    fontWeight: 'bold',
+    color: COLORS.TEXT,
+    marginBottom: SPACING.MEDIUM,
+  },
+  featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  featureIcon: {
-    marginRight: 8,
+    marginBottom: SPACING.SMALL,
   },
   featureText: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: FONT_SIZES.MEDIUM,
+    color: COLORS.TEXT,
+    marginLeft: SPACING.SMALL,
   },
-  selectedIndicator: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
+  featureUnavailable: {
+    color: COLORS.TEXT_DISABLED,
+    textDecorationLine: 'line-through',
+  },
+  premiumFeature: {
+    color: COLORS.PRIMARY,
   },
   subscribeButton: {
-    backgroundColor: '#2196F3',
-    borderRadius: 8,
-    paddingVertical: 16,
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 16,
+    backgroundColor: COLORS.PRIMARY,
+    padding: SPACING.MEDIUM,
+    borderRadius: BORDER_RADIUS.SMALL,
     alignItems: 'center',
-  },
-  loadingButton: {
-    opacity: 0.7,
+    marginBottom: SPACING.LARGE,
   },
   subscribeButtonText: {
-    color: 'white',
-    fontSize: 16,
+    color: COLORS.BLACK,
     fontWeight: 'bold',
+    fontSize: FONT_SIZES.MEDIUM,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  termsSection: {
+    marginBottom: SPACING.XLARGE,
+    alignItems: 'center',
   },
   termsText: {
+    fontSize: FONT_SIZES.XS,
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
-    color: '#999',
-    fontSize: 12,
-    marginHorizontal: 16,
-    marginBottom: 32,
+    marginBottom: SPACING.MEDIUM,
   },
-  centeredContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  premiumIcon: {
-    marginBottom: 16,
-  },
-  premiumTitle: {
-    fontSize: 24,
+  restoreText: {
+    fontSize: FONT_SIZES.SMALL,
+    color: COLORS.PRIMARY,
     fontWeight: 'bold',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  premiumMessage: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  manageButton: {
-    backgroundColor: '#2196F3',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    marginBottom: 12,
-    width: '100%',
-    alignItems: 'center',
-  },
-  manageButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  backButton: {
-    paddingVertical: 12,
-    width: '100%',
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: '#666',
-    fontSize: 16,
   },
 }); 

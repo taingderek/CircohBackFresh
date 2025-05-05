@@ -61,6 +61,7 @@
     "react-native-confetti": "^0.1.0",
     "react-native-copilot": "^3.3.3",
     "react-native-deck-swiper": "^2.0.17",
+    "react-native-dropdown-picker": "^5.4.6",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-ratings": "^8.1.0",
     "react-native-reanimated": "~3.16.1",
