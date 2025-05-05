@@ -1,256 +1,265 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
-import { styled } from 'nativewind';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import NativeWindButton from '../components/common/NativeWindButton';
-import NativeWindCard from '../components/common/NativeWindCard';
 import { Feather } from '@expo/vector-icons';
 
-const StyledView = styled(View);
-const StyledText = styled(Text);
-const StyledScrollView = styled(ScrollView);
-const StyledSafeAreaView = styled(SafeAreaView);
-
+// Standard React Native component demo instead of NativeWind
 const NativeWindDemo = () => {
   return (
-    <StyledSafeAreaView className="flex-1 bg-background">
-      <StyledView className="px-4 py-3 border-b border-border">
-        <StyledText className="text-xl font-semibold text-text">NativeWind Demo</StyledText>
-        <StyledText className="text-sm text-text-secondary">
-          A showcase of styled components using NativeWind
-        </StyledText>
-      </StyledView>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Component Demo</Text>
+        <Text style={styles.headerSubtitle}>
+          A showcase of styled components using React Native StyleSheet
+        </Text>
+      </View>
       
-      <StyledScrollView className="flex-1 p-4">
+      <ScrollView style={styles.scrollView}>
         {/* Section: Cards */}
-        <StyledView className="mb-8">
-          <StyledText className="text-lg font-medium text-text mb-4">Cards</StyledText>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Cards</Text>
           
-          <StyledView className="space-y-4">
+          <View style={styles.cardContainer}>
             {/* Default Card */}
-            <NativeWindCard 
-              title="Default Card" 
-              subtitle="This is a simple card with default styling"
-            >
-              <StyledText className="text-text">
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>Default Card</Text>
+                <Text style={styles.cardSubtitle}>This is a simple card with default styling</Text>
+              </View>
+              <Text style={styles.cardContent}>
                 This is the content of the card. You can put any components here.
-              </StyledText>
-            </NativeWindCard>
+              </Text>
+            </View>
             
             {/* Elevated Card */}
-            <NativeWindCard 
-              title="Elevated Card" 
-              subtitle="This card has a shadow effect"
-              variant="elevated"
-              footer={
-                <StyledView className="flex-row justify-end">
-                  <NativeWindButton 
-                    title="Action" 
-                    onPress={() => console.log('Card action pressed')} 
-                    size="small"
-                    variant="primary"
-                  />
-                </StyledView>
-              }
-            >
-              <StyledText className="text-text">
+            <View style={styles.cardElevated}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>Elevated Card</Text>
+                <Text style={styles.cardSubtitle}>This card has a shadow effect</Text>
+              </View>
+              <Text style={styles.cardContent}>
                 This card has an elevated appearance with a shadow and includes a footer with actions.
-              </StyledText>
-            </NativeWindCard>
+              </Text>
+              <View style={styles.cardFooter}>
+                <TouchableOpacity 
+                  style={styles.buttonPrimary}
+                  onPress={() => console.log('Card action pressed')}
+                >
+                  <Text style={styles.buttonText}>Action</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
             
             {/* Bordered Card */}
-            <NativeWindCard 
-              title="Bordered Card" 
-              subtitle="This card has a visible border"
-              variant="bordered"
-            >
-              <StyledText className="text-text">
+            <View style={styles.cardBordered}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>Bordered Card</Text>
+                <Text style={styles.cardSubtitle}>This card has a visible border</Text>
+              </View>
+              <Text style={styles.cardContent}>
                 This card has a visible border around it for better definition.
-              </StyledText>
-            </NativeWindCard>
+              </Text>
+            </View>
             
             {/* Clickable Card */}
-            <NativeWindCard 
-              title="Clickable Card" 
-              subtitle="This entire card is clickable"
+            <TouchableOpacity 
+              style={styles.cardElevated}
               onPress={() => console.log('Card pressed')}
-              variant="elevated"
             >
-              <StyledView className="flex-row items-center justify-between">
-                <StyledText className="text-text">Tap anywhere on this card</StyledText>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>Clickable Card</Text>
+                <Text style={styles.cardSubtitle}>This entire card is clickable</Text>
+              </View>
+              <View style={styles.clickableCardContent}>
+                <Text style={styles.cardContent}>Tap anywhere on this card</Text>
                 <Feather name="chevron-right" size={20} color="#B0B0B0" />
-              </StyledView>
-            </NativeWindCard>
-            
-            {/* Card with Custom Styling */}
-            <NativeWindCard 
-              className="bg-primary/10 border-2 border-primary"
-              title="Custom Styled Card"
-              titleClassName="text-primary font-bold"
-            >
-              <StyledText className="text-text">
-                This card has custom background and border styling.
-              </StyledText>
-            </NativeWindCard>
-          </StyledView>
-        </StyledView>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
         
         {/* Section: Button Variants */}
-        <StyledView className="mb-8">
-          <StyledText className="text-lg font-medium text-text mb-4">Button Variants</StyledText>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Button Variants</Text>
           
-          <StyledView className="space-y-4">
-            <NativeWindButton 
-              title="Primary Button" 
-              onPress={() => console.log('Primary button pressed')} 
-              variant="primary"
-            />
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={styles.buttonPrimary}
+              onPress={() => console.log('Primary button pressed')}
+            >
+              <Text style={styles.buttonText}>Primary Button</Text>
+            </TouchableOpacity>
             
-            <NativeWindButton 
-              title="Secondary Button" 
-              onPress={() => console.log('Secondary button pressed')} 
-              variant="secondary"
-            />
+            <TouchableOpacity 
+              style={styles.buttonSecondary}
+              onPress={() => console.log('Secondary button pressed')}
+            >
+              <Text style={styles.buttonTextDark}>Secondary Button</Text>
+            </TouchableOpacity>
             
-            <NativeWindButton 
-              title="Outline Button" 
-              onPress={() => console.log('Outline button pressed')} 
-              variant="outline"
-            />
+            <TouchableOpacity 
+              style={styles.buttonOutline}
+              onPress={() => console.log('Outline button pressed')}
+            >
+              <Text style={styles.buttonTextLight}>Outline Button</Text>
+            </TouchableOpacity>
             
-            <NativeWindButton 
-              title="Danger Button" 
-              onPress={() => console.log('Danger button pressed')} 
-              variant="danger"
-            />
-          </StyledView>
-        </StyledView>
-        
-        {/* Section: Button Sizes */}
-        <StyledView className="mb-8">
-          <StyledText className="text-lg font-medium text-text mb-4">Button Sizes</StyledText>
-          
-          <StyledView className="space-y-4">
-            <NativeWindButton 
-              title="Small Button" 
-              onPress={() => console.log('Small button pressed')} 
-              size="small"
-            />
-            
-            <NativeWindButton 
-              title="Medium Button" 
-              onPress={() => console.log('Medium button pressed')} 
-              size="medium"
-            />
-            
-            <NativeWindButton 
-              title="Large Button" 
-              onPress={() => console.log('Large button pressed')} 
-              size="large"
-            />
-          </StyledView>
-        </StyledView>
-        
-        {/* Section: Button States */}
-        <StyledView className="mb-8">
-          <StyledText className="text-lg font-medium text-text mb-4">Button States</StyledText>
-          
-          <StyledView className="space-y-4">
-            <NativeWindButton 
-              title="Disabled Button" 
-              onPress={() => console.log('This should not log')} 
-              disabled={true}
-            />
-            
-            <NativeWindButton 
-              title="Loading Button" 
-              onPress={() => console.log('This should not log')} 
-              loading={true}
-            />
-            
-            <NativeWindButton 
-              title="Full Width Button" 
-              onPress={() => console.log('Full width button pressed')} 
-              fullWidth={true}
-            />
-          </StyledView>
-        </StyledView>
-        
-        {/* Section: Buttons with Icons */}
-        <StyledView className="mb-8">
-          <StyledText className="text-lg font-medium text-text mb-4">Buttons with Icons</StyledText>
-          
-          <StyledView className="space-y-4">
-            <NativeWindButton 
-              title="Left Icon" 
-              onPress={() => console.log('Left icon button pressed')} 
-              leftIcon={<Feather name="plus" size={16} color="#121212" />}
-            />
-            
-            <NativeWindButton 
-              title="Right Icon" 
-              onPress={() => console.log('Right icon button pressed')} 
-              rightIcon={<Feather name="arrow-right" size={16} color="#121212" />}
-            />
-            
-            <NativeWindButton 
-              title="Both Icons" 
-              onPress={() => console.log('Both icons button pressed')} 
-              leftIcon={<Feather name="settings" size={16} color="#121212" />}
-              rightIcon={<Feather name="chevron-down" size={16} color="#121212" />}
-              variant="secondary"
-            />
-          </StyledView>
-        </StyledView>
-        
-        {/* Section: Custom Classes */}
-        <StyledView className="mb-8">
-          <StyledText className="text-lg font-medium text-text mb-4">Custom Styling</StyledText>
-          
-          <StyledView className="space-y-4">
-            <NativeWindButton 
-              title="Custom Button" 
-              onPress={() => console.log('Custom button pressed')} 
-              className="bg-tertiary shadow-glow-pink"
-              textClassName="font-bold"
-            />
-            
-            <NativeWindButton 
-              title="Elevated Button" 
-              onPress={() => console.log('Elevated button pressed')} 
-              className="shadow-elevated"
-              variant="secondary"
-            />
-          </StyledView>
-        </StyledView>
-        
-        {/* Card + Button Integration Example */}
-        <StyledView className="mb-8">
-          <StyledText className="text-lg font-medium text-text mb-4">Card with Call to Action</StyledText>
-          
-          <NativeWindCard variant="elevated">
-            <StyledView className="items-center">
-              <StyledView className="w-12 h-12 rounded-full bg-secondary items-center justify-center mb-2">
-                <Feather name="star" size={24} color="#121212" />
-              </StyledView>
-              <StyledText className="text-lg font-semibold text-text mb-1">Premium Feature</StyledText>
-              <StyledText className="text-text-secondary text-center mb-4">
-                Upgrade your plan to access all premium features and get unlimited access.
-              </StyledText>
-              <NativeWindButton
-                title="Upgrade Now"
-                onPress={() => console.log('Upgrade pressed')}
-                variant="primary"
-                size="medium"
-                fullWidth={true}
-                className="shadow-glow-mint"
-              />
-            </StyledView>
-          </NativeWindCard>
-        </StyledView>
-      </StyledScrollView>
-    </StyledSafeAreaView>
+            <TouchableOpacity 
+              style={styles.buttonDanger}
+              onPress={() => console.log('Danger button pressed')}
+            >
+              <Text style={styles.buttonText}>Danger Button</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#121212',
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333333',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#B0B0B0',
+  },
+  scrollView: {
+    flex: 1,
+    padding: 16,
+  },
+  section: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    marginBottom: 16,
+  },
+  cardContainer: {
+    gap: 16,
+  },
+  card: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+  },
+  cardElevated: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  cardBordered: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#32FFA5',
+  },
+  cardHeader: {
+    marginBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    color: '#B0B0B0',
+  },
+  cardContent: {
+    color: '#FFFFFF',
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+  },
+  clickableCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  buttonContainer: {
+    gap: 16,
+  },
+  buttonPrimary: {
+    backgroundColor: '#32FFA5',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  buttonSecondary: {
+    backgroundColor: '#BE93FD',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  buttonOutline: {
+    backgroundColor: 'transparent',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+  },
+  buttonDanger: {
+    backgroundColor: '#FF93B9',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  buttonText: {
+    color: '#121212',
+    fontWeight: '500',
+  },
+  buttonTextDark: {
+    color: '#121212',
+    fontWeight: '500',
+  },
+  buttonTextLight: {
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+});
 
 export default NativeWindDemo; 

@@ -37,6 +37,13 @@
       "expo-router"
     ],
     "scheme": "circohback",
-    "newArchEnabled": true
+    "newArchEnabled": true,
+    "systemFonts": {
+      "regular": "System",
+      "medium": "System",
+      "bold": "System",
+      "italic": "System",
+      "boldItalic": "System"
+    }
   }
 }
