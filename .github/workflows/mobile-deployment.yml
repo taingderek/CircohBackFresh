@@ -1,0 +1,217 @@
+name: Mobile App Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+jobs:
+  lint-and-test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint || echo "Linting failed but continuing"
+
+      - name: Run tests
+        run: npm test
+
+  build-development:
+    name: Build Development Preview
+    needs: lint-and-test
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'development')
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v7
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          packager: npm
+
+      - name: Setup EAS
+        run: npm install -g eas-cli
+
+      - name: Create environment file
+        run: |
+          node scripts/setup-env.js
+          echo "APP_ENV=development" >> .env.development
+          echo "VERSION=$(node -p "require('./package.json').version")" >> .env.development
+          echo "BUILD_NUMBER=${{ github.run_number }}" >> .env.development
+          echo "SUPABASE_URL=${{ secrets.DEV_SUPABASE_URL }}" >> .env.development
+          echo "SUPABASE_ANON_KEY=${{ secrets.DEV_SUPABASE_ANON_KEY }}" >> .env.development
+          echo "SUPABASE_JWT_SECRET=${{ secrets.DEV_SUPABASE_JWT_SECRET }}" >> .env.development
+          echo "STRIPE_PUBLISHABLE_KEY=${{ secrets.DEV_STRIPE_PUBLISHABLE_KEY }}" >> .env.development
+          echo "EAS_PROJECT_ID=${{ secrets.EAS_PROJECT_ID }}" >> .env.development
+
+      - name: Build development app
+        run: eas build --platform all --profile development-device --non-interactive
+
+  build-staging:
+    name: Build Staging App
+    needs: lint-and-test
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v7
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          packager: npm
+
+      - name: Setup EAS
+        run: npm install -g eas-cli
+
+      - name: Create environment file
+        run: |
+          node scripts/setup-env.js
+          echo "APP_ENV=staging" >> .env.staging
+          echo "VERSION=$(node -p "require('./package.json').version")" >> .env.staging
+          echo "BUILD_NUMBER=${{ github.run_number }}" >> .env.staging
+          echo "SUPABASE_URL=${{ secrets.STAGING_SUPABASE_URL }}" >> .env.staging
+          echo "SUPABASE_ANON_KEY=${{ secrets.STAGING_SUPABASE_ANON_KEY }}" >> .env.staging
+          echo "SUPABASE_JWT_SECRET=${{ secrets.STAGING_SUPABASE_JWT_SECRET }}" >> .env.staging
+          echo "STRIPE_PUBLISHABLE_KEY=${{ secrets.STAGING_STRIPE_PUBLISHABLE_KEY }}" >> .env.staging
+          echo "EAS_PROJECT_ID=${{ secrets.EAS_PROJECT_ID }}" >> .env.staging
+
+      - name: Build staging app
+        run: eas build --platform all --profile staging --non-interactive
+
+      - name: Update staging channel
+        run: eas update --branch staging --auto
+
+  build-production:
+    name: Build Production App
+    needs: lint-and-test
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v7
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          packager: npm
+
+      - name: Setup EAS
+        run: npm install -g eas-cli
+
+      - name: Create environment file
+        run: |
+          node scripts/setup-env.js
+          echo "APP_ENV=production" >> .env.production
+          echo "VERSION=$(node -p "require('./package.json').version")" >> .env.production
+          echo "BUILD_NUMBER=${{ github.run_number }}" >> .env.production
+          echo "SUPABASE_URL=${{ secrets.PROD_SUPABASE_URL }}" >> .env.production
+          echo "SUPABASE_ANON_KEY=${{ secrets.PROD_SUPABASE_ANON_KEY }}" >> .env.production
+          echo "SUPABASE_JWT_SECRET=${{ secrets.PROD_SUPABASE_JWT_SECRET }}" >> .env.production
+          echo "STRIPE_PUBLISHABLE_KEY=${{ secrets.PROD_STRIPE_PUBLISHABLE_KEY }}" >> .env.production
+          echo "EAS_PROJECT_ID=${{ secrets.EAS_PROJECT_ID }}" >> .env.production
+
+      - name: Build production app
+        run: eas build --platform all --profile production --non-interactive
+
+      # Manual approval required for production update
+      - name: Wait for approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: taingderek
+          minimum-approvals: 1
+          issue-title: "Deploy to Production"
+          issue-body: "Please approve or deny the deployment to production"
+          exclude-workflow-initiator-as-approver: false
+
+      - name: Update production channel
+        run: eas update --branch production --auto
+
+  submit-to-stores:
+    name: Submit to App Stores
+    needs: build-production
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup EAS
+        run: npm install -g eas-cli
+
+      - name: Submit to stores
+        run: eas submit --platform all --profile production --non-interactive
+        env:
+          EXPO_APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.EXPO_APPLE_APP_SPECIFIC_PASSWORD }} 

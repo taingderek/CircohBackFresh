@@ -150,12 +150,20 @@ export default function HomeScreen() {
                 <Text style={styles.scoreText}>
                   {Math.round(levelProgress.progressPercentage)}% to Level {currentLevel + 1}
                 </Text>
-                <TouchableOpacity 
-                  style={styles.viewDetailsButton}
-                  onPress={handleScorePress}
-                >
-                  <Text style={styles.viewDetailsText}>View Details</Text>
-                </TouchableOpacity>
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity 
+                    style={styles.viewDetailsButton}
+                    onPress={handleScorePress}
+                  >
+                    <Text style={styles.viewDetailsText}>View Details</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.viewDetailsButton, styles.dashboardButton]}
+                    onPress={() => router.push('/growth-dashboard')}
+                  >
+                    <Text style={styles.viewDetailsText}>Dashboard</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
@@ -371,5 +379,16 @@ const styles = StyleSheet.create({
   streakTextContainer: {
     flex: 1,
     marginLeft: SPACING.MEDIUM,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dashboardButton: {
+    backgroundColor: COLORS.SECONDARY,
+    paddingVertical: SPACING.SMALL,
+    paddingHorizontal: SPACING.MEDIUM,
+    borderRadius: BORDER_RADIUS.SMALL,
+    alignSelf: 'flex-start',
   },
 }); 

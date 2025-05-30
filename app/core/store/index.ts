@@ -15,14 +15,15 @@ import {
 // Import slices
 import authReducer from './slices/authSlice';
 import contactsReducer from './slices/contactsSlice';
-import remindersReducer from './slices/remindersSlice';
+import remindersReducer from './slices/reminderSlice';
 import memoriesReducer from './slices/memoriesSlice';
 import messagingReducer from './slices/messagingSlice';
 import subscriptionReducer from './slices/subscriptionSlice';
 import scoreReducer from './slices/scoreSlice';
 import travelReducer from './slices/travelSlice';
-import notificationReducer from './slices/notificationSlice';
+import notificationsReducer from './slices/notificationSlice';
 import growthScoreReducer from '../../features/growth-score/growthScoreSlice';
+// import { api } from '../api/api';
 // These will be implemented later:
 // import messagingReducer from './slices/messagingSlice';
 // import subscriptionReducer from './slices/subscriptionSlice';
@@ -70,7 +71,7 @@ const growthScorePersistConfig = {
   whitelist: ['activities', 'streaks', 'achievements'],
 };
 
-// Combine all reducers
+// Configure the root reducer
 const rootReducer = combineReducers({
   auth: persistReducer(authPersistConfig, authReducer),
   contacts: persistReducer(contactsPersistConfig, contactsReducer),
@@ -80,8 +81,9 @@ const rootReducer = combineReducers({
   subscription: subscriptionReducer,
   score: scoreReducer,
   travel: persistReducer(travelPersistConfig, travelReducer),
-  notifications: persistReducer(notificationPersistConfig, notificationReducer),
+  notifications: persistReducer(notificationPersistConfig, notificationsReducer),
   growthScore: persistReducer(growthScorePersistConfig, growthScoreReducer),
+  // [api.reducerPath]: api.reducer,
   // These will be added as we implement them:
   // messaging: messagingReducer,
   // subscription: subscriptionReducer,
@@ -119,7 +121,7 @@ export const store = configureStore({
 });
 
 // Set up listeners for RTK Query
-setupListeners(store.dispatch);
+// setupListeners(store.dispatch);
 
 // Create the persisted store
 export const persistor = persistStore(store);

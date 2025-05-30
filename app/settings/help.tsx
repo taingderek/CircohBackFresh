@@ -7,7 +7,8 @@ import {
   ScrollView, 
   TextInput, 
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -37,6 +38,10 @@ export default function HelpSupportScreen() {
   const [message, setMessage] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // FAQ Modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [currentFAQ, setCurrentFAQ] = useState({ question: '', answer: '' });
   
   // Handle support ticket submission
   const handleSubmitTicket = async () => {
@@ -76,9 +81,10 @@ export default function HelpSupportScreen() {
     }
   };
 
-  // Handle FAQ press
+  // Handle FAQ press - now opens modal instead of alert
   const handleFAQPress = (question: string, answer: string) => {
-    Alert.alert(question, answer);
+    setCurrentFAQ({ question, answer });
+    setModalVisible(true);
   };
 
   return (
@@ -90,6 +96,31 @@ export default function HelpSupportScreen() {
         <Text style={styles.title}>Help & Support</Text>
         <View style={styles.placeholder} />
       </View>
+
+      {/* FAQ Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{currentFAQ.question}</Text>
+              <TouchableOpacity 
+                onPress={() => setModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color={COLORS.TEXT} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              <Text style={styles.modalAnswer}>{currentFAQ.answer}</Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       <ScrollView 
         contentContainerStyle={styles.content}
@@ -103,7 +134,7 @@ export default function HelpSupportScreen() {
             Please fill out the form below and we'll get back to you as soon as possible.
           </Text>
           
-          <View style={styles.formGroup}>
+          <View style={{ ...styles.formGroup, marginBottom: dropdownOpen ? 140 : SPACING.MEDIUM }}>
             <Text style={styles.label}>Issue Category</Text>
             <DropDownPicker
               open={dropdownOpen}
@@ -161,7 +192,7 @@ export default function HelpSupportScreen() {
             style={styles.faqItem}
             onPress={() => handleFAQPress(
               'How do I create a reminder?',
-              'To create a reminder, navigate to a contact\'s profile, tap on "Add Reminder", then select a frequency and optional message. The app will remind you to reach out according to your settings.'
+              'To create a reminder, navigate to a contact\'s profile, tap on "Add Reminder", then select a frequency and optional message. The app will remind you to reach out according to your settings.\n\nYou can set different reminder frequencies based on your relationship with each contact. Premium users get access to custom frequencies and more detailed options for their reminders.'
             )}
           >
             <Text style={styles.faqQuestion}>How do I create a reminder?</Text>
@@ -172,7 +203,7 @@ export default function HelpSupportScreen() {
             style={styles.faqItem}
             onPress={() => handleFAQPress(
               'How does the AI message generation work?',
-              'Our AI message generation feature helps you create personalized messages for your contacts. Navigate to a contact, tap "Generate Message", select a tone and occasion, and our AI will craft a customized message that you can edit and send.'
+              'Our AI message generation feature helps you create personalized messages for your contacts. Navigate to a contact, tap "Generate Message", select a tone and occasion, and our AI will craft a customized message that you can edit and send.\n\nPremium users get access to more tones, longer messages, and the ability to save templates for future use. The AI considers your relationship history and previous interactions to create truly personalized messages.'
             )}
           >
             <Text style={styles.faqQuestion}>How does the AI message generation work?</Text>
@@ -183,7 +214,7 @@ export default function HelpSupportScreen() {
             style={styles.faqItem}
             onPress={() => handleFAQPress(
               'How do I cancel my subscription?',
-              'To cancel your subscription, go to your device\'s subscription management settings. For iOS, go to Settings > Your Apple ID > Subscriptions. For Android, open the Google Play Store, tap your profile icon, and select Payments & subscriptions.'
+              'To cancel your subscription, go to your device\'s subscription management settings.\n\nFor iOS:\n1. Go to Settings\n2. Tap your Apple ID\n3. Select Subscriptions\n4. Find CircohBack\n5. Tap Cancel Subscription\n\nFor Android:\n1. Open the Google Play Store\n2. Tap your profile icon\n3. Select Payments & subscriptions\n4. Tap Subscriptions\n5. Find CircohBack\n6. Tap Cancel subscription\n\nYour premium features will remain active until the end of your current billing period.'
             )}
           >
             <Text style={styles.faqQuestion}>How do I cancel my subscription?</Text>
@@ -194,7 +225,7 @@ export default function HelpSupportScreen() {
             style={styles.faqItem}
             onPress={() => handleFAQPress(
               'Can I export my contacts?',
-              'Yes, premium users can export their contacts and interaction history as a CSV file. Go to Settings > Data Export and tap "Export Contacts" to generate and download your data.'
+              'Yes, premium users can export their contacts and interaction history as a CSV file. Go to Settings > Data Export and tap "Export Contacts" to generate and download your data.\n\nThe export includes contact details, reminder history, past interactions, and notes you\'ve added. This feature is especially useful for backing up your data or analyzing your relationship patterns outside the app.'
             )}
           >
             <Text style={styles.faqQuestion}>Can I export my contacts?</Text>
@@ -205,7 +236,7 @@ export default function HelpSupportScreen() {
             style={styles.faqItem}
             onPress={() => handleFAQPress(
               'Is my data secure?',
-              'We take your privacy seriously. All data is encrypted both in transit and at rest. We do not sell your personal information or contact data to third parties. You can review our complete privacy policy in the app settings.'
+              'We take your privacy seriously. All data is encrypted both in transit and at rest using industry-standard encryption protocols. We do not sell your personal information or contact data to third parties.\n\nYour personal data is stored on secure servers with regular backups, and we implement strict access controls within our organization. You can delete your account and all associated data at any time from the Settings menu.\n\nYou can review our complete privacy policy in the app settings for more details on how we protect your information.'
             )}
           >
             <Text style={styles.faqQuestion}>Is my data secure?</Text>
@@ -294,7 +325,6 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.SMALL,
     paddingHorizontal: SPACING.SMALL,
     paddingVertical: SPACING.SMALL,
-    marginBottom: dropdownOpen ? 120 : 0, // Add space when dropdown is open
   },
   dropdownContainer: {
     backgroundColor: COLORS.BACKGROUND,
@@ -370,5 +400,54 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.MEDIUM,
     fontWeight: 'bold',
     marginLeft: SPACING.SMALL,
+  },
+  // New modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.LARGE,
+  },
+  modalContent: {
+    width: '100%',
+    backgroundColor: COLORS.CARD,
+    borderRadius: BORDER_RADIUS.LARGE,
+    maxHeight: '80%',
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.BORDER,
+    padding: SPACING.MEDIUM,
+  },
+  modalTitle: {
+    fontSize: FONT_SIZES.MEDIUM,
+    fontWeight: 'bold',
+    color: COLORS.TEXT,
+    fontFamily: FONT_FAMILIES.BOLD,
+    flex: 1,
+    paddingRight: SPACING.SMALL,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.BACKGROUND,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBody: {
+    padding: SPACING.MEDIUM,
+    maxHeight: 400,
+  },
+  modalAnswer: {
+    fontSize: FONT_SIZES.MEDIUM,
+    color: COLORS.TEXT,
+    fontFamily: FONT_FAMILIES.REGULAR,
+    lineHeight: 24,
   },
 }); 

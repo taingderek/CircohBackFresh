@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { styled } from 'nativewind';
+import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
 
-const StyledView = styled(View);
-const StyledText = styled(Text);
-const StyledTouchableOpacity = styled(TouchableOpacity);
+// Use regular components instead of styled components
+const StyledView = View;
+const StyledText = Text;
+const StyledTouchableOpacity = TouchableOpacity;
 
 interface CardProps {
   title?: string;
@@ -13,11 +13,11 @@ interface CardProps {
   footer?: React.ReactNode;
   onPress?: () => void;
   variant?: 'default' | 'elevated' | 'bordered';
-  className?: string;
-  titleClassName?: string;
-  subtitleClassName?: string;
-  contentClassName?: string;
-  footerClassName?: string;
+  className?: string; // Kept for compatibility
+  titleClassName?: string; // Kept for compatibility
+  subtitleClassName?: string; // Kept for compatibility
+  contentClassName?: string; // Kept for compatibility
+  footerClassName?: string; // Kept for compatibility
 }
 
 const NativeWindCard: React.FC<CardProps> = ({
@@ -34,43 +34,54 @@ const NativeWindCard: React.FC<CardProps> = ({
   footerClassName = '',
 }) => {
   // Get variant styles
-  const getVariantStyles = () => {
+  const getVariantStyle = (): ViewStyle => {
+    // Base style
+    const baseStyle: ViewStyle = {
+      borderRadius: 8,
+      overflow: 'hidden',
+      backgroundColor: '#252525', // background-card
+    };
+    
+    // Add variant-specific styles
     switch (variant) {
-      case 'default':
-        return 'bg-background-card';
       case 'elevated':
-        return 'bg-background-card shadow-elevated';
+        return {
+          ...baseStyle,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
+          elevation: 5,
+        };
       case 'bordered':
-        return 'bg-background-card border border-border';
+        return {
+          ...baseStyle,
+          borderWidth: 1,
+          borderColor: '#333333', // border
+        };
       default:
-        return 'bg-background-card';
+        return baseStyle;
     }
   };
-
-  const cardClasses = `
-    rounded-lg overflow-hidden
-    ${getVariantStyles()}
-    ${className}
-  `;
 
   const CardComponent = onPress ? StyledTouchableOpacity : StyledView;
 
   return (
     <CardComponent 
-      className={cardClasses}
+      style={getVariantStyle()}
       onPress={onPress}
       activeOpacity={onPress ? 0.8 : 1}
     >
       {/* Card Header (if title or subtitle exists) */}
       {(title || subtitle) && (
-        <StyledView className="p-4 border-b border-border">
+        <StyledView style={styles.header}>
           {title && (
-            <StyledText className={`text-base font-medium text-text ${titleClassName}`}>
+            <StyledText style={styles.title}>
               {title}
             </StyledText>
           )}
           {subtitle && (
-            <StyledText className={`text-sm text-text-secondary mt-1 ${subtitleClassName}`}>
+            <StyledText style={styles.subtitle}>
               {subtitle}
             </StyledText>
           )}
@@ -78,18 +89,45 @@ const NativeWindCard: React.FC<CardProps> = ({
       )}
       
       {/* Card Content */}
-      <StyledView className={`p-4 ${contentClassName}`}>
+      <StyledView style={styles.content}>
         {children}
       </StyledView>
       
       {/* Card Footer */}
       {footer && (
-        <StyledView className={`p-4 pt-2 border-t border-border ${footerClassName}`}>
+        <StyledView style={styles.footer}>
           {footer}
         </StyledView>
       )}
     </CardComponent>
   );
 };
+
+const styles = StyleSheet.create({
+  header: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333333', // border
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#FFFFFF', // text
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#B0B0B0', // text-secondary
+    marginTop: 4,
+  },
+  content: {
+    padding: 16,
+  },
+  footer: {
+    padding: 16,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#333333', // border
+  },
+});
 
 export default NativeWindCard; 

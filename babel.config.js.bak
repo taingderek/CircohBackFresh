@@ -1,0 +1,16 @@
+module.exports = api => {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: [
+      // Basic syntax plugins first
+      '@babel/plugin-transform-export-namespace-from',
+      
+      // Framework specific plugins
+      'nativewind/babel',
+      
+      // Reanimated MUST be last
+      'react-native-reanimated/plugin'
+    ]
+  };
+}; 

@@ -1,10 +1,10 @@
 import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
-import { styled } from 'nativewind';
+import { TouchableOpacity, Text, ActivityIndicator, View, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
-const StyledTouchableOpacity = styled(TouchableOpacity);
-const StyledText = styled(Text);
-const StyledView = styled(View);
+// Use regular components instead of styled components
+const StyledTouchableOpacity = TouchableOpacity;
+const StyledText = Text;
+const StyledView = View;
 
 interface ButtonProps {
   title: string;
@@ -16,8 +16,8 @@ interface ButtonProps {
   fullWidth?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
-  className?: string;
-  textClassName?: string;
+  className?: string; // Kept for compatibility
+  textClassName?: string; // Kept for compatibility
 }
 
 const NativeWindButton: React.FC<ButtonProps> = ({
@@ -33,64 +33,109 @@ const NativeWindButton: React.FC<ButtonProps> = ({
   className = '',
   textClassName = '',
 }) => {
-  // Get base styles based on variant
-  const getBaseStyles = () => {
+  // Get button styles based on variant and size
+  const getButtonStyle = (): ViewStyle => {
+    const styles: ViewStyle[] = [];
+    
+    // Base style
+    styles.push({
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 8,
+    });
+    
+    // Variant style
     switch (variant) {
       case 'primary':
-        return 'bg-primary active:bg-primary/90';
+        styles.push({ backgroundColor: '#32FFA5' });
+        break;
       case 'secondary':
-        return 'bg-secondary active:bg-secondary/90';
+        styles.push({ backgroundColor: '#BE93FD' });
+        break;
       case 'outline':
-        return 'bg-transparent border border-primary';
+        styles.push({ 
+          backgroundColor: 'transparent',
+          borderWidth: 1,
+          borderColor: '#32FFA5'
+        });
+        break;
       case 'danger':
-        return 'bg-error active:bg-error/90';
-      default:
-        return 'bg-primary active:bg-primary/90';
+        styles.push({ backgroundColor: '#FF6B6B' });
+        break;
     }
+    
+    // Size style
+    switch (size) {
+      case 'small':
+        styles.push({
+          paddingHorizontal: 12,
+          paddingVertical: 6,
+          borderRadius: 4,
+        });
+        break;
+      case 'medium':
+        styles.push({
+          paddingHorizontal: 16,
+          paddingVertical: 10,
+          borderRadius: 8,
+        });
+        break;
+      case 'large':
+        styles.push({
+          paddingHorizontal: 24,
+          paddingVertical: 12,
+          borderRadius: 12,
+        });
+        break;
+    }
+    
+    // Conditional styles
+    if (disabled) {
+      styles.push({ opacity: 0.5 });
+    }
+    
+    if (fullWidth) {
+      styles.push({ width: '100%' });
+    }
+    
+    // Merge all styles into one object
+    return Object.assign({}, ...styles);
   };
 
-  // Get text styles based on variant
-  const getTextStyles = () => {
+  // Get text styles based on variant and size
+  const getTextStyle = (): TextStyle => {
+    const styles: TextStyle[] = [];
+    
+    // Base style
+    styles.push({ fontWeight: '500' });
+    
+    // Variant style
     switch (variant) {
       case 'primary':
-        return 'text-background-dark';
       case 'secondary':
-        return 'text-background-dark';
-      case 'outline':
-        return 'text-primary';
       case 'danger':
-        return 'text-background-dark';
-      default:
-        return 'text-background-dark';
+        styles.push({ color: '#121212' });
+        break;
+      case 'outline':
+        styles.push({ color: '#32FFA5' });
+        break;
     }
-  };
-
-  // Get size styles
-  const getSizeStyles = () => {
+    
+    // Size style
     switch (size) {
       case 'small':
-        return 'px-3 py-1.5 rounded-md';
+        styles.push({ fontSize: 12 });
+        break;
       case 'medium':
-        return 'px-4 py-2.5 rounded-lg';
+        styles.push({ fontSize: 14 });
+        break;
       case 'large':
-        return 'px-6 py-3 rounded-xl';
-      default:
-        return 'px-4 py-2.5 rounded-lg';
+        styles.push({ fontSize: 16 });
+        break;
     }
-  };
-
-  // Get font size based on button size
-  const getTextSizeStyles = () => {
-    switch (size) {
-      case 'small':
-        return 'text-xs';
-      case 'medium':
-        return 'text-sm';
-      case 'large':
-        return 'text-base';
-      default:
-        return 'text-sm';
-    }
+    
+    // Merge all styles into one object
+    return Object.assign({}, ...styles);
   };
 
   // Handle press
@@ -100,25 +145,9 @@ const NativeWindButton: React.FC<ButtonProps> = ({
     }
   };
 
-  const buttonClasses = `
-    items-center justify-center
-    ${getBaseStyles()} 
-    ${getSizeStyles()}
-    ${disabled ? 'opacity-50' : 'opacity-100'}
-    ${fullWidth ? 'w-full' : 'w-auto'}
-    ${className}
-  `;
-
-  const textClasses = `
-    font-medium
-    ${getTextStyles()}
-    ${getTextSizeStyles()}
-    ${textClassName}
-  `;
-
   return (
     <StyledTouchableOpacity 
-      className={buttonClasses}
+      style={getButtonStyle()}
       onPress={handlePress}
       activeOpacity={0.8}
       disabled={disabled || loading}
@@ -129,14 +158,28 @@ const NativeWindButton: React.FC<ButtonProps> = ({
           color={variant === 'outline' ? '#32FFA5' : '#121212'} 
         />
       ) : (
-        <StyledView className="flex-row items-center justify-center">
-          {leftIcon && <StyledView className="mr-2">{leftIcon}</StyledView>}
-          <StyledText className={textClasses}>{title}</StyledText>
-          {rightIcon && <StyledView className="ml-2">{rightIcon}</StyledView>}
+        <StyledView style={styles.contentContainer}>
+          {leftIcon && <StyledView style={styles.iconLeft}>{leftIcon}</StyledView>}
+          <StyledText style={getTextStyle()}>{title}</StyledText>
+          {rightIcon && <StyledView style={styles.iconRight}>{rightIcon}</StyledView>}
         </StyledView>
       )}
     </StyledTouchableOpacity>
   );
 };
+
+const styles = StyleSheet.create({
+  contentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconLeft: {
+    marginRight: 8,
+  },
+  iconRight: {
+    marginLeft: 8,
+  },
+});
 
 export default NativeWindButton; 

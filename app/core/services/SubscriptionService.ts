@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase';
+import { supabase } from '../services/supabaseClient';
 import { store } from '../store';
 import { STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY } from '@env';
 

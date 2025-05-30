@@ -1,79 +1,82 @@
-// Simple test to verify functions were set up
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+/**
+ * Supabase Connection Test Script
+ * 
+ * This script tests the connectivity to Supabase and verifies that
+ * your environment is correctly configured.
+ */
+
+import 'react-native-url-polyfill/auto';
+import * as dotenv from 'dotenv';
+import { supabase, testSupabaseConnection } from './app/core/services/supabaseClient';
+import Constants from 'expo-constants';
 
 // Load environment variables
 dotenv.config();
 
-// Get Supabase credentials from .env file
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+// Print header
+console.log(`\n🔍 CircohBack - Supabase Connection Test\n`);
+console.log('--------------------------------------');
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Error: SUPABASE_URL and SUPABASE_ANON_KEY must be set in .env file');
-  process.exit(1);
-}
-
-// Create Supabase client
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-async function checkSetup() {
+async function runTests() {
   try {
-    console.log('Checking for get_user_profile function...');
-    const { data, error } = await supabase.rpc('get_user_profile', { 
-      p_user_id: '00000000-0000-0000-0000-000000000000' 
-    });
-    
-    if (error) {
-      if (error.message.includes('function') && error.message.includes('does not exist')) {
-        console.error('❌ get_user_profile function does not exist');
-        console.error('Error:', error.message);
-      } else {
-        console.log('✅ get_user_profile function exists! (Error is expected for non-existent user)');
-      }
+    // Display configuration info
+    console.log('📋 Configuration:');
+    const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL || '(not set)';
+    console.log(` - Supabase URL: ${supabaseUrl.substring(0, 25)}...`);
+    console.log(` - Environment: ${process.env.EXPO_PUBLIC_APP_ENV || 'development'}`);
+    console.log('--------------------------------------');
+
+    // Test 1: Basic connectivity
+    console.log('\n🧪 Test 1: Basic Connectivity');
+    const connResult = await testSupabaseConnection();
+    if (connResult) {
+      console.log('✅ Successfully connected to Supabase!');
     } else {
-      console.log('✅ get_user_profile function exists!');
+      console.error('❌ Failed to connect to Supabase');
+      console.log('\nPlease check your configuration and try again.');
+      process.exit(1);
     }
-    
-    console.log('\nChecking for profiles table...');
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
+
+    // Test 2: Query health_check table
+    console.log('\n🧪 Test 2: Query health_check table');
+    const { data, error } = await supabase
+      .from('health_check')
       .select('*')
       .limit(1);
-      
-    if (profilesError) {
-      if (profilesError.message.includes('relation') && profilesError.message.includes('does not exist')) {
-        console.error('❌ profiles table does not exist');
-        console.error('Error:', profilesError.message);
-      } else {
-        console.error('❌ Other error with profiles table');
-        console.error('Error:', profilesError.message);
-      }
+
+    if (error) {
+      console.error('❌ Failed to query health_check table:', error.message);
+      console.log('\nDo you need to run the migration? Try:');
+      console.log('  npx supabase migration up');
     } else {
-      console.log('✅ profiles table exists!');
+      console.log('✅ Successfully queried health_check table');
+      console.log(`   Status: ${data?.[0]?.status || 'unknown'}`);
+    }
+
+    // Test 3: Auth configuration
+    console.log('\n🧪 Test 3: Auth Configuration');
+    const { data: authConfig, error: authError } = await supabase.auth.getSession();
+    
+    if (authError) {
+      console.error('❌ Auth configuration issue:', authError.message);
+    } else {
+      console.log('✅ Auth is properly configured');
+      console.log(`   Session present: ${authConfig.session ? 'Yes' : 'No'}`);
+    }
+
+    // Final results
+    console.log('\n--------------------------------------');
+    if (!error && !authError) {
+      console.log('🎉 All tests passed! Your Supabase configuration is working correctly.');
+    } else {
+      console.log('⚠️ Some tests failed. Please review the issues above.');
     }
     
-    console.log('\nChecking for exec_sql function...');
-    const testSql = "SELECT 1 as test";
-    const { error: execSqlError } = await supabase.rpc('exec_sql', { sql: testSql });
-    
-    if (execSqlError) {
-      if (execSqlError.message.includes('function') && execSqlError.message.includes('does not exist')) {
-        console.error('❌ exec_sql function does not exist');
-        console.error('Error:', execSqlError.message);
-      } else {
-        console.error('❌ Other error with exec_sql function');
-        console.error('Error:', execSqlError.message);
-      }
-    } else {
-      console.log('✅ exec_sql function exists!');
-    }
-    
-    console.log('\nVerification complete.');
   } catch (err) {
-    console.error('Unexpected error during verification:', err);
+    console.error('\n❌ Unexpected error during testing:', err);
+    process.exit(1);
   }
 }
 
-// Run the check
-checkSetup(); 
+// Run the tests
+runTests().catch(console.error); 

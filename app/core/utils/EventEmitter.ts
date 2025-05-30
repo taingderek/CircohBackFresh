@@ -1,77 +1,55 @@
 /**
- * Simple EventEmitter implementation for React Native
- * This replaces the Node.js 'events' module which is not available in React Native
+ * Simple event emitter implementation for handling events within the app
  */
-
-type EventCallback = (...args: any[]) => void;
-
 export class EventEmitter {
-  private events: Record<string, EventCallback[]> = {};
+  private events: { [key: string]: Array<(data: any) => void> } = {};
 
   /**
-   * Add an event listener
+   * Subscribe to an event
+   * @param event Event name
+   * @param callback Function to call when event is emitted
+   * @returns Unsubscribe function
    */
-  public on(event: string, listener: EventCallback): this {
+  public on(event: string, callback: (data: any) => void): () => void {
     if (!this.events[event]) {
       this.events[event] = [];
     }
-    this.events[event].push(listener);
-    return this;
-  }
+    this.events[event].push(callback);
 
-  /**
-   * Add a one-time event listener
-   */
-  public once(event: string, listener: EventCallback): this {
-    const onceWrapper = (...args: any[]) => {
-      listener(...args);
-      this.off(event, onceWrapper);
+    // Return unsubscribe function
+    return () => {
+      this.events[event] = this.events[event].filter(cb => cb !== callback);
     };
-    return this.on(event, onceWrapper);
   }
 
   /**
-   * Remove an event listener
+   * Emit an event with data
+   * @param event Event name
+   * @param data Data to pass to event handlers
    */
-  public off(event: string, listener: EventCallback): this {
-    if (this.events[event]) {
-      this.events[event] = this.events[event].filter(l => l !== listener);
+  public emit(event: string, data: any): void {
+    const callbacks = this.events[event];
+    if (callbacks) {
+      callbacks.forEach(callback => {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error(`Error in event handler for ${event}:`, error);
+        }
+      });
     }
-    return this;
   }
 
   /**
-   * Remove all listeners for an event
+   * Remove all event listeners
+   * @param event Optional event name to clear specific event
    */
-  public removeAllListeners(event?: string): this {
+  public clear(event?: string): void {
     if (event) {
       delete this.events[event];
     } else {
       this.events = {};
     }
-    return this;
-  }
-
-  /**
-   * Emit an event
-   */
-  public emit(event: string, ...args: any[]): boolean {
-    if (!this.events[event]) {
-      return false;
-    }
-    
-    this.events[event].forEach(listener => {
-      listener(...args);
-    });
-    
-    return true;
-  }
-
-  /**
-   * Get all listeners for an event
-   */
-  public listeners(event: string): EventCallback[] {
-    return this.events[event] || [];
   }
 }
 

@@ -1,24 +1,24 @@
-import { styled } from 'nativewind';
+// Temporarily use regular React Native components instead of NativeWind
 import { Text, View, TouchableOpacity, ScrollView, TextInput, Image, FlatList } from 'react-native';
 
-// Styled components with NativeWind
-export const StyledView = styled(View);
-export const StyledText = styled(Text);
-export const StyledTouchableOpacity = styled(TouchableOpacity);
-export const StyledScrollView = styled(ScrollView);
-export const StyledTextInput = styled(TextInput);
-export const StyledImage = styled(Image);
-export const StyledFlatList = styled(FlatList);
+// Regular components (not styled)
+export const StyledView = View;
+export const StyledText = Text;
+export const StyledTouchableOpacity = TouchableOpacity;
+export const StyledScrollView = ScrollView;
+export const StyledTextInput = TextInput;
+export const StyledImage = Image;
+export const StyledFlatList = FlatList;
 
-// Helper for combining Tailwind classes
-export const tw = (classNames: string) => classNames;
+// Helper for combining Tailwind classes (now just returns empty strings for compatibility)
+export const tw = (classNames: string) => '';
 
 // Helper for conditional Tailwind classes
 export const twMerge = (...classes: (string | boolean | undefined)[]) => {
-  return classes.filter(Boolean).join(' ');
+  return '';
 };
 
 // Helper for dynamic styles based on conditions
 export const twConditional = (baseStyle: string, conditionalStyle: string, condition: boolean) => {
-  return condition ? `${baseStyle} ${conditionalStyle}` : baseStyle;
+  return '';
 }; 

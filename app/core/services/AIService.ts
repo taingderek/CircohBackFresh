@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase';
+import { supabase } from './supabaseClient';
 import { storageService } from './StorageService';
 import { store } from '../store';
 

@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase';
+import { supabase } from '../services/supabaseClient';
 
 /**
  * Checks connectivity to Supabase by making a simple request

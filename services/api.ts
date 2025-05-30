@@ -1,4 +1,4 @@
-import supabase from '../app/core/config/supabase';
+import supabase from '../app/core/services/supabaseClient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // User Authentication

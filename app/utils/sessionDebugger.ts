@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase, authEvents } from '../core/services/supabaseClient';
+import { supabase, resetSession, authEvents } from '../core/services/supabaseClient';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 import { Platform } from 'react-native';
 
@@ -248,7 +248,7 @@ export const sessionDebugger = {
       return {
         valid: false,
         error: error?.message || 'Unknown error',
-        tokenType: 'exception',
+        tokenType: 'unknown',
       };
     }
   },
@@ -385,114 +385,49 @@ export const sessionDebugger = {
     actions: string[];
     error: string | null;
   }> {
-    const actions: string[] = [];
     try {
-      // Get current state
-      const { sessionState, networkState, connectionTest, tokenValidity } = await this.collectDebugInfo();
+      const actions: string[] = [];
       
-      // Check if we're online
-      if (!networkState.isConnected) {
-        return {
-          success: false,
-          actions: ['No network connection detected'],
-          error: 'Device is offline',
-        };
-      }
+      // Collect diagnostics first
+      const diagnostics = await this.collectDebugInfo();
       
-      // Check if we can reach Supabase
-      if (!connectionTest.canConnect) {
-        actions.push(`Cannot connect to Supabase API: ${connectionTest.error}`);
-        return {
-          success: false,
-          actions,
-          error: 'Cannot reach CircohBack servers',
-        };
-      }
-      
-      // Try session recovery if we have JWT issues
-      if (!tokenValidity.valid) {
-        actions.push(`Invalid token detected: ${tokenValidity.error}`);
-        
-        // Try to recover the session
-        const recoveryResult = await this.recoverBrokenSession();
-        if (recoveryResult.success) {
-          actions.push('Successfully recovered broken session');
+      // Check if we need to fix auth token issues
+      if (!diagnostics.tokenValidity.valid) {
+        try {
+          // Use the centralized resetSession function
+          await resetSession();
+          actions.push('Reset session credentials');
+        } catch (error: any) {
+          console.error('Error resetting session:', error);
           return {
-            success: true,
+            success: false,
             actions,
-            error: null,
-          };
-        } else {
-          actions.push(`Recovery failed: ${recoveryResult.message}`);
-        }
-      }
-      
-      // Check if we have a session
-      if (!sessionState.hasSession) {
-        actions.push('No active session found');
-        
-        // Clear any stale tokens
-        const sessionStorage = await this.getSessionStorage();
-        if (Object.keys(sessionStorage).length > 0) {
-          await this.clearSessionStorage();
-          actions.push('Cleared stale session data');
-        }
-        
-        return {
-          success: true,
-          actions,
-          error: null,
-        };
-      }
-      
-      // Handle expired session
-      if (sessionState.isExpired) {
-        actions.push('Expired session detected');
-        
-        // Try to refresh the token
-        const { data, error } = await supabase.auth.refreshSession();
-        
-        if (error) {
-          actions.push('Token refresh failed');
-          
-          // Clear session data if refresh fails
-          await this.clearSessionStorage();
-          actions.push('Cleared expired session data');
-          
-          return {
-            success: true,
-            actions,
-            error: error.message,
-          };
-        }
-        
-        if (data.session) {
-          actions.push('Session refreshed successfully');
-          
-          // Notify auth listeners about the refreshed session
-          authEvents.emit('sessionFixed', { session: data.session });
-          
-          return {
-            success: true,
-            actions,
-            error: null,
+            error: `Failed to reset session: ${error?.message || 'Unknown error'}`
           };
         }
       }
       
-      // Default case - no issues found or fixed
-      actions.push('No issues detected with session');
+      // Check for storage-related issues
+      const sessionState = await this.getSessionState();
+      if (sessionState.refreshToken && !sessionState.hasSession) {
+        await this.clearSessionStorage();
+        actions.push('Cleared orphaned session storage');
+      }
+      
+      // Emit event for successful fix
+      authEvents.emit('sessionFixed', { actions });
+      
       return {
         success: true,
         actions,
-        error: null,
+        error: null
       };
     } catch (error: any) {
-      actions.push(`Unexpected error: ${error?.message}`);
+      console.error('Error fixing session issues:', error);
       return {
         success: false,
-        actions,
-        error: error?.message || 'Unknown error during fix attempt',
+        actions: [],
+        error: error?.message || 'Unknown error during session fix'
       };
     }
   },

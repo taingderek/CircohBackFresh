@@ -81,25 +81,67 @@ export const signIn = createAsyncThunk(
   'auth/signIn',
   async (credentials: { email: string, password: string }, { rejectWithValue }) => {
     try {
+      console.log('Attempting to sign in with:', credentials.email);
+      
+      // Clear any existing session first to avoid state conflicts
+      try {
+        await supabase.auth.signOut();
+      } catch (signOutError) {
+        console.warn('Error during pre-signin cleanup:', signOutError);
+      }
+      
+      // Now sign in
       const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
       });
       
       if (error) {
+        console.error('Sign in error:', error.message);
+        
+        // Provide more user-friendly error messages
+        if (error.message.includes('Invalid login credentials')) {
+          return rejectWithValue('Invalid email or password. Please try again.');
+        } else if (error.message.includes('Too many requests')) {
+          return rejectWithValue('Too many login attempts. Please try again later.');
+        } else if (error.message.includes('network')) {
+          return rejectWithValue('Network error. Please check your internet connection.');
+        }
+        
         return rejectWithValue(error.message);
       }
       
-      // After successful signin, get the user profile
-      const profile = await userService.getCurrentUserProfile();
+      if (!data.session) {
+        console.error('Sign in succeeded but no session returned');
+        return rejectWithValue('Authentication error. Please try again.');
+      }
       
-      return { 
-        session: data.session,
-        user: data.user,
-        profile
-      };
+      console.log('Sign in successful, getting user profile');
+      
+      try {
+        // After successful signin, get the user profile
+        const profile = await userService.getCurrentUserProfile();
+        
+        // Return the session, user, and profile data
+        return { 
+          session: data.session,
+          user: data.user,
+          profile
+        };
+      } catch (profileError) {
+        console.error('Error getting profile after sign in:', profileError);
+        
+        // Still consider the login successful even if we couldn't get the profile
+        // The app can try to get the profile again later
+        return { 
+          session: data.session,
+          user: data.user,
+          profile: null
+        };
+      }
     } catch (error) {
-      return rejectWithValue((error as Error).message);
+      console.error('Unexpected sign in error:', error);
+      return rejectWithValue((error as Error).message || 'An unexpected error occurred');
     }
   }
 );

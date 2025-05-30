@@ -7,6 +7,61 @@ import { transformUserProfile, transformProfileForUpdate } from '../utils/userTr
  */
 class UserService {
   /**
+   * Create an initial profile for a new user
+   * This helps ensure users have a profile entry in the database
+   */
+  async createInitialProfile(userId: string, userData?: any): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          full_name: userData?.full_name || userData?.name || '',
+          avatar_url: userData?.avatar_url || null,
+          email: userData?.email || '',
+          subscription: {
+            tier: 'free',
+            status: 'active',
+            startDate: new Date(),
+            endDate: null,
+            isPremium: false,
+            daysRemaining: 0
+          },
+          preferences: {
+            theme: 'dark',
+            notifications: {
+              contactReminders: true,
+              birthdayReminders: true,
+              travelAlerts: true,
+              emailNotifications: true,
+              pushNotifications: true,
+            },
+            contactSettings: {
+              defaultContactFrequency: 'monthly',
+              birthdayReminderDays: 3,
+            }
+          },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error creating initial profile:', error);
+        // If the error is a duplicate key, that's actually okay
+        if (error.code === '23505') { // Unique violation
+          return true;
+        }
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in createInitialProfile:', error);
+      return false;
+    }
+  }
+
+  /**
    * Get the current user's complete profile
    */
   async getCurrentUserProfile(): Promise<UserProfile | null> {
@@ -38,12 +93,31 @@ class UserService {
         if (profileError) {
           console.error('Error fetching profile:', profileError);
           
-          // If no profile found, just return a basic profile based on auth user
+          // If no profile found, create one and try again
           if (profileError.code === 'PGRST116') {
-            console.log('No profile found in database - using auth user data only');
+            console.log('No profile found - creating initial profile');
             
-            // Create a basic profile object from auth user data
-            // This bypasses the need to insert into the profiles table
+            // Create a profile for this user
+            const created = await this.createInitialProfile(user.id, user.user_metadata);
+            
+            if (created) {
+              // Try to get the profile again
+              const { data: newProfileData, error: newProfileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+                
+              if (newProfileError) {
+                console.error('Still could not get profile after creation:', newProfileError);
+              } else {
+                console.log('Profile created and retrieved successfully');
+                return transformUserProfile(newProfileData);
+              }
+            }
+            
+            // If we still can't get/create a profile, use a basic one
+            console.log('Using basic profile from auth data');
             const basicProfile = {
               id: user.id,
               email: user.email || '',
@@ -62,7 +136,6 @@ class UserService {
               lastLoginAt: new Date()
             };
             
-            console.log('Using basic profile:', basicProfile);
             return basicProfile as UserProfile;
           } else {
             // For other errors, throw

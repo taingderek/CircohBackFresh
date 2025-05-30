@@ -1,268 +1,356 @@
 import { supabase } from './supabaseClient';
-import { 
-  Reminder, 
-  ReminderCreateData, 
-  ReminderUpdateData
-} from '../types/contact';
 
 /**
- * Transforms a database reminder to our Reminder type
+ * Interface for reminder data
  */
-const transformReminder = (raw: any): Reminder => {
-  return {
-    id: raw.id,
-    userId: raw.user_id,
-    contactId: raw.contact_id,
-    title: raw.title,
-    description: raw.description,
-    reminder_date: new Date(raw.due_date),
-    is_complete: raw.is_completed,
-    frequency: raw.reminder_type === 'recurring' ? raw.priority : null,
-    created_at: new Date(raw.created_at),
-    updated_at: new Date(raw.updated_at)
-  };
-};
+export interface Reminder {
+  id: string;
+  contactId: string;
+  contactName: string;
+  userId: string;
+  title: string;
+  description?: string;
+  reminderDate: Date;
+  isComplete: boolean;
+  completedDate?: Date | null;
+  frequency?: 'one-time' | 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'quarterly' | 'yearly';
+  priority: 'low' | 'medium' | 'high';
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-class ReminderService {
+/**
+ * Service to handle reminders from Supabase
+ */
+export const reminderService = {
   /**
    * Get all reminders for the current user
    */
-  async getReminders(showCompleted = false): Promise<Reminder[]> {
+  getAllReminders: async (showCompleted = false): Promise<Reminder[]> => {
     try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error(authError?.message || 'User not authenticated');
+      }
+      
       let query = supabase
         .from('reminders')
-        .select('*')
-        .order('due_date', { ascending: true });
+        .select(`
+          *,
+          contacts (
+            full_name
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('reminder_date', { ascending: true });
         
       if (!showCompleted) {
-        query = query.eq('is_completed', false);
+        query = query.eq('is_complete', false);
       }
       
       const { data, error } = await query;
         
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       
-      return (data || []).map(transformReminder);
+      return (data || []).map(item => ({
+        id: item.id,
+        contactId: item.contact_id,
+        contactName: item.contacts?.full_name || 'Unknown',
+        userId: item.user_id,
+        title: item.title,
+        description: item.description,
+        reminderDate: new Date(item.reminder_date),
+        isComplete: item.is_complete,
+        completedDate: item.completed_date ? new Date(item.completed_date) : null,
+        frequency: item.frequency,
+        priority: item.priority || 'medium',
+        createdAt: new Date(item.created_at),
+        updatedAt: new Date(item.updated_at)
+      }));
     } catch (error) {
       console.error('Error fetching reminders:', error);
       throw error;
     }
-  }
+  },
+  
+  /**
+   * Get completed reminders
+   */
+  getCompletedReminders: async (): Promise<Reminder[]> => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error(authError?.message || 'User not authenticated');
+      }
+      
+      const { data, error } = await supabase
+        .from('reminders')
+        .select(`
+          *,
+          contacts (
+            full_name
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('is_complete', true)
+        .order('completed_date', { ascending: false });
+        
+      if (error) {
+        throw error;
+      }
+      
+      return (data || []).map(item => ({
+        id: item.id,
+        contactId: item.contact_id,
+        contactName: item.contacts?.full_name || 'Unknown',
+        userId: item.user_id,
+        title: item.title,
+        description: item.description,
+        reminderDate: new Date(item.reminder_date),
+        isComplete: item.is_complete,
+        completedDate: item.completed_date ? new Date(item.completed_date) : null,
+        frequency: item.frequency,
+        priority: item.priority || 'medium',
+        createdAt: new Date(item.created_at),
+        updatedAt: new Date(item.updated_at)
+      }));
+    } catch (error) {
+      console.error('Error fetching completed reminders:', error);
+      throw error;
+    }
+  },
   
   /**
    * Get reminders for a specific contact
    */
-  async getContactReminders(contactId: string, showCompleted = false): Promise<Reminder[]> {
+  getContactReminders: async (contactId: string, showCompleted = false): Promise<Reminder[]> => {
     try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error(authError?.message || 'User not authenticated');
+      }
+      
       let query = supabase
         .from('reminders')
-        .select('*')
+        .select(`
+          *,
+          contacts (
+            full_name
+          )
+        `)
+        .eq('user_id', user.id)
         .eq('contact_id', contactId)
-        .order('due_date', { ascending: true });
+        .order('reminder_date', { ascending: true });
         
       if (!showCompleted) {
-        query = query.eq('is_completed', false);
+        query = query.eq('is_complete', false);
       }
       
       const { data, error } = await query;
         
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       
-      return (data || []).map(transformReminder);
+      return (data || []).map(item => ({
+        id: item.id,
+        contactId: item.contact_id,
+        contactName: item.contacts?.full_name || 'Unknown',
+        userId: item.user_id,
+        title: item.title,
+        description: item.description,
+        reminderDate: new Date(item.reminder_date),
+        isComplete: item.is_complete,
+        completedDate: item.completed_date ? new Date(item.completed_date) : null,
+        frequency: item.frequency,
+        priority: item.priority || 'medium',
+        createdAt: new Date(item.created_at),
+        updatedAt: new Date(item.updated_at)
+      }));
     } catch (error) {
       console.error('Error fetching contact reminders:', error);
       throw error;
     }
-  }
+  },
   
   /**
-   * Get upcoming reminders
+   * Mark a reminder as complete
    */
-  async getUpcomingReminders(days: number = 7): Promise<Reminder[]> {
+  completeReminder: async (reminderId: string): Promise<void> => {
     try {
-      const now = new Date();
-      const future = new Date();
-      future.setDate(future.getDate() + days);
-      
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('reminders')
-        .select('*')
-        .eq('is_completed', false)
-        .gte('due_date', now.toISOString())
-        .lte('due_date', future.toISOString())
-        .order('due_date', { ascending: true });
+        .update({
+          is_complete: true,
+          completed_date: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', reminderId);
         
-      if (error) throw error;
-      
-      return (data || []).map(transformReminder);
+      if (error) {
+        throw error;
+      }
     } catch (error) {
-      console.error('Error fetching upcoming reminders:', error);
+      console.error('Error completing reminder:', error);
       throw error;
     }
-  }
+  },
   
   /**
-   * Get a specific reminder by ID
+   * Mark a reminder as incomplete
    */
-  async getReminder(reminderId: string): Promise<Reminder | null> {
+  uncompleteReminder: async (reminderId: string): Promise<void> => {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('reminders')
-        .select('*')
-        .eq('id', reminderId)
-        .single();
+        .update({
+          is_complete: false,
+          completed_date: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', reminderId);
         
-      if (error) throw error;
-      
-      return data ? transformReminder(data) : null;
+      if (error) {
+        throw error;
+      }
     } catch (error) {
-      console.error('Error fetching reminder:', error);
+      console.error('Error uncompleting reminder:', error);
       throw error;
     }
-  }
+  },
   
   /**
    * Create a new reminder
    */
-  async createReminder(reminderData: ReminderCreateData): Promise<Reminder> {
+  createReminder: async (reminderData: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt'>): Promise<Reminder> => {
     try {
-      // Transform to database format
-      const dbReminder: Record<string, any> = {
-        contact_id: reminderData.contactId,
-        title: reminderData.title,
-        description: reminderData.description,
-        due_date: reminderData.reminder_date,
-        reminder_type: reminderData.frequency ? 'recurring' : 'one-time',
-        priority: reminderData.frequency || 'medium',
-        is_completed: false,
-        notification_sent: false
-      };
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      const { data, error } = await supabase
-        .from('reminders')
-        .insert(dbReminder)
-        .select()
-        .single();
-        
-      if (error) throw error;
-      
-      return transformReminder(data);
-    } catch (error) {
-      console.error('Error creating reminder:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Update an existing reminder
-   */
-  async updateReminder(reminderId: string, reminderData: ReminderUpdateData): Promise<Reminder> {
-    try {
-      // Transform to database format
-      const dbReminder: Record<string, any> = {};
-      
-      if (reminderData.contactId !== undefined) dbReminder.contact_id = reminderData.contactId;
-      if (reminderData.title !== undefined) dbReminder.title = reminderData.title;
-      if (reminderData.description !== undefined) dbReminder.description = reminderData.description;
-      if (reminderData.reminder_date !== undefined) dbReminder.due_date = reminderData.reminder_date;
-      if (reminderData.is_complete !== undefined) dbReminder.is_completed = reminderData.is_complete;
-      if (reminderData.frequency !== undefined) {
-        dbReminder.reminder_type = reminderData.frequency ? 'recurring' : 'one-time';
-        dbReminder.priority = reminderData.frequency;
+      if (authError || !user) {
+        throw new Error(authError?.message || 'User not authenticated');
       }
       
       const { data, error } = await supabase
         .from('reminders')
-        .update(dbReminder)
-        .eq('id', reminderId)
-        .select()
+        .insert({
+          user_id: user.id,
+          contact_id: reminderData.contactId,
+          title: reminderData.title,
+          description: reminderData.description,
+          reminder_date: reminderData.reminderDate.toISOString(),
+          is_complete: reminderData.isComplete,
+          completed_date: reminderData.completedDate ? reminderData.completedDate.toISOString() : null,
+          frequency: reminderData.frequency,
+          priority: reminderData.priority
+        })
+        .select(`
+          *,
+          contacts (
+            full_name
+          )
+        `)
         .single();
         
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       
-      return transformReminder(data);
+      return {
+        id: data.id,
+        contactId: data.contact_id,
+        contactName: data.contacts?.full_name || 'Unknown',
+        userId: data.user_id,
+        title: data.title,
+        description: data.description,
+        reminderDate: new Date(data.reminder_date),
+        isComplete: data.is_complete,
+        completedDate: data.completed_date ? new Date(data.completed_date) : null,
+        frequency: data.frequency,
+        priority: data.priority || 'medium',
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at)
+      };
+    } catch (error) {
+      console.error('Error creating reminder:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Update an existing reminder
+   */
+  updateReminder: async (reminderId: string, reminderData: Partial<Reminder>): Promise<Reminder> => {
+    try {
+      const updateData: Record<string, any> = {};
+      
+      if (reminderData.title !== undefined) updateData.title = reminderData.title;
+      if (reminderData.description !== undefined) updateData.description = reminderData.description;
+      if (reminderData.reminderDate !== undefined) updateData.reminder_date = reminderData.reminderDate.toISOString();
+      if (reminderData.isComplete !== undefined) updateData.is_complete = reminderData.isComplete;
+      if (reminderData.completedDate !== undefined) updateData.completed_date = reminderData.completedDate?.toISOString();
+      if (reminderData.frequency !== undefined) updateData.frequency = reminderData.frequency;
+      if (reminderData.priority !== undefined) updateData.priority = reminderData.priority;
+      
+      updateData.updated_at = new Date().toISOString();
+      
+      const { data, error } = await supabase
+        .from('reminders')
+        .update(updateData)
+        .eq('id', reminderId)
+        .select(`
+          *,
+          contacts (
+            full_name
+          )
+        `)
+        .single();
+        
+      if (error) {
+        throw error;
+      }
+      
+      return {
+        id: data.id,
+        contactId: data.contact_id,
+        contactName: data.contacts?.full_name || 'Unknown',
+        userId: data.user_id,
+        title: data.title,
+        description: data.description,
+        reminderDate: new Date(data.reminder_date),
+        isComplete: data.is_complete,
+        completedDate: data.completed_date ? new Date(data.completed_date) : null,
+        frequency: data.frequency,
+        priority: data.priority || 'medium',
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at)
+      };
     } catch (error) {
       console.error('Error updating reminder:', error);
       throw error;
     }
-  }
+  },
   
   /**
    * Delete a reminder
    */
-  async deleteReminder(reminderId: string): Promise<void> {
+  deleteReminder: async (reminderId: string): Promise<void> => {
     try {
       const { error } = await supabase
         .from('reminders')
         .delete()
         .eq('id', reminderId);
         
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
     } catch (error) {
       console.error('Error deleting reminder:', error);
       throw error;
     }
   }
-  
-  /**
-   * Mark a reminder as complete
-   */
-  async completeReminder(reminderId: string): Promise<Reminder> {
-    try {
-      const { data, error } = await supabase
-        .from('reminders')
-        .update({ is_completed: true })
-        .eq('id', reminderId)
-        .select()
-        .single();
-        
-      if (error) throw error;
-      
-      return transformReminder(data);
-    } catch (error) {
-      console.error('Error completing reminder:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Snooze a reminder for a specified number of days
-   */
-  async snoozeReminder(reminderId: string, days: number = 1): Promise<Reminder> {
-    try {
-      // Get current reminder
-      const { data: currentReminder, error: fetchError } = await supabase
-        .from('reminders')
-        .select('*')
-        .eq('id', reminderId)
-        .single();
-        
-      if (fetchError) throw fetchError;
-      
-      // Calculate new due date
-      const currentDate = new Date(currentReminder.due_date);
-      const newDate = new Date(currentDate);
-      newDate.setDate(newDate.getDate() + days);
-      
-      // Update reminder
-      const { data, error } = await supabase
-        .from('reminders')
-        .update({ 
-          due_date: newDate.toISOString(),
-          notification_sent: false
-        })
-        .eq('id', reminderId)
-        .select()
-        .single();
-        
-      if (error) throw error;
-      
-      return transformReminder(data);
-    } catch (error) {
-      console.error('Error snoozing reminder:', error);
-      throw error;
-    }
-  }
-}
-
-export default new ReminderService(); 
+}; 

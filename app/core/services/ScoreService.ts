@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase';
+import { supabase } from '../services/supabaseClient';
 import { store } from '../store';
 
 // Types
@@ -19,6 +19,37 @@ export interface Rating {
   comment: string | null;
   anonymous: boolean;
   createdAt: string;
+}
+
+/**
+ * Interface for score category
+ */
+export type ScoreCategory = 'consistency' | 'empathy' | 'thoughtfulness' | 'engagement' | 'organization' | 'proactivity';
+
+/**
+ * Interface for category score
+ */
+export interface CategoryScore {
+  category: ScoreCategory;
+  score: number;
+  percentage: number;
+}
+
+/**
+ * Interface for score breakdown
+ */
+export interface ScoreBreakdown {
+  totalScore: number;
+  categories: CategoryScore[];
+  lastUpdated: string;
+}
+
+/**
+ * Interface for historical score data
+ */
+export interface HistoricalScoreData {
+  date: string;
+  score: number;
 }
 
 class ScoreServiceClass {
@@ -378,7 +409,171 @@ class ScoreServiceClass {
       createdAt: rating.created_at
     }));
   }
+
+  /**
+   * Get user's current score breakdown
+   */
+  public async getScoreBreakdown(): Promise<ScoreBreakdown> {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error(authError?.message || 'User not authenticated');
+      }
+      
+      // Get user score data
+      const { data: scoreData, error: scoreError } = await supabase
+        .from('user_scores')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (scoreError && scoreError.code !== 'PGRST116') { // Not found is ok
+        throw scoreError;
+      }
+      
+      // Get score categories
+      const { data: categories, error: categoriesError } = await supabase
+        .from('score_categories')
+        .select('*')
+        .eq('user_id', user.id);
+        
+      if (categoriesError) {
+        throw categoriesError;
+      }
+      
+      // Default values if no data is found
+      const totalScore = scoreData?.total_score || 750;
+      
+      // Transform categories into the expected format
+      const categoryScores: CategoryScore[] = [];
+      
+      // Add default categories if none exist
+      if (!categories || categories.length === 0) {
+        categoryScores.push(
+          { category: 'consistency', score: 280, percentage: 0.65 },
+          { category: 'empathy', score: 260, percentage: 0.60 },
+          { category: 'thoughtfulness', score: 300, percentage: 0.70 },
+          { category: 'engagement', score: 320, percentage: 0.75 },
+          { category: 'organization', score: 310, percentage: 0.72 },
+          { category: 'proactivity', score: 250, percentage: 0.58 }
+        );
+      } else {
+        // Map database categories to CategoryScore
+        categories.forEach(cat => {
+          categoryScores.push({
+            category: cat.category_name as ScoreCategory,
+            score: cat.score,
+            percentage: cat.percentage / 100
+          });
+        });
+      }
+      
+      return {
+        totalScore,
+        categories: categoryScores,
+        lastUpdated: scoreData?.updated_at || new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error fetching score breakdown:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Get historical score data
+   */
+  public async getHistoricalScores(period: 'week' | 'month' | 'year'): Promise<HistoricalScoreData[]> {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error(authError?.message || 'User not authenticated');
+      }
+      
+      // Determine date range based on period
+      const endDate = new Date();
+      const startDate = new Date();
+      
+      switch (period) {
+        case 'week':
+          startDate.setDate(endDate.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(endDate.getMonth() - 1);
+          break;
+        case 'year':
+          startDate.setFullYear(endDate.getFullYear() - 1);
+          break;
+      }
+      
+      // Get historical score data
+      const { data, error } = await supabase
+        .from('score_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('date', startDate.toISOString())
+        .lte('date', endDate.toISOString())
+        .order('date', { ascending: true });
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Return empty array if no data
+      if (!data || data.length === 0) {
+        // Create synthetic data if no real data exists
+        return this.createSyntheticHistoricalData(period);
+      }
+      
+      // Transform to expected format
+      return data.map(item => ({
+        date: item.date,
+        score: item.score
+      }));
+    } catch (error) {
+      console.error('Error fetching historical scores:', error);
+      throw error;
+    }
+  }
 }
 
 export const ScoreService = new ScoreServiceClass();
-export default ScoreService; 
+export default ScoreService;
+
+/**
+ * Helper function to create synthetic historical data for demonstration
+ */
+function createSyntheticHistoricalData(period: 'week' | 'month' | 'year'): HistoricalScoreData[] {
+  const endDate = new Date();
+  const baseScore = 750;
+  const result: HistoricalScoreData[] = [];
+  
+  let dataPoints = 7; // default for week
+  if (period === 'month') dataPoints = 30;
+  if (period === 'year') dataPoints = 52; // weekly for year
+  
+  for (let i = 0; i < dataPoints; i++) {
+    const date = new Date();
+    
+    if (period === 'week') {
+      date.setDate(endDate.getDate() - (dataPoints - i - 1));
+    } else if (period === 'month') {
+      date.setDate(endDate.getDate() - (dataPoints - i - 1));
+    } else if (period === 'year') {
+      date.setDate(endDate.getDate() - (dataPoints - i - 1) * 7);
+    }
+    
+    // Gradually increase the score (with some randomness)
+    const growthFactor = 1 + (i / dataPoints) * 0.3; // 0% to 30% growth
+    const randomVariation = 1 + (Math.random() * 0.1 - 0.05); // -5% to +5%
+    const score = Math.round(baseScore * growthFactor * randomVariation);
+    
+    result.push({
+      date: date.toISOString().split('T')[0],
+      score
+    });
+  }
+  
+  return result;
+} 

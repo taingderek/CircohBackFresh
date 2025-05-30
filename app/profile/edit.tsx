@@ -1,136 +1,341 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, FONT_SIZES, FONT_FAMILIES, BORDER_RADIUS } from '@/app/core/constants/theme';
 import Avatar from '@/app/components/common/Avatar';
+import * as Haptics from 'expo-haptics';
+import PhoneInput from 'react-native-phone-number-input';
+import * as ImagePicker from 'expo-image-picker';
+import { profileService, UserProfile } from '@/app/core/services/profileService';
+import { supabase } from '@/app/core/services/supabaseClient';
+import Toast from 'react-native-toast-message';
+import { useAuth } from '@/app/hooks/useAuth';
+
+// Extend PhoneInput type with the methods we need
+declare module 'react-native-phone-number-input' {
+  interface PhoneInput {
+    getNumber(): string;
+    getFormattedValue(): string;
+  }
+}
+
+// Country codes with flags for dropdown
+const COUNTRY_CODES = [
+  { label: '🇺🇸 +1', value: '+1', flag: '🇺🇸' },
+  { label: '🇨🇦 +1', value: '+1', flag: '🇨🇦' },
+  { label: '🇬🇧 +44', value: '+44', flag: '🇬🇧' },
+  { label: '🇦🇺 +61', value: '+61', flag: '🇦🇺' },
+  { label: '🇮🇳 +91', value: '+91', flag: '🇮🇳' },
+  { label: '🇯🇵 +81', value: '+81', flag: '🇯🇵' },
+  { label: '🇩🇪 +49', value: '+49', flag: '🇩🇪' },
+  { label: '🇫🇷 +33', value: '+33', flag: '🇫🇷' },
+  { label: '🇮🇹 +39', value: '+39', flag: '🇮🇹' },
+  { label: '🇪🇸 +34', value: '+34', flag: '🇪🇸' },
+];
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const phoneInput = useRef<PhoneInput>(null);
   
-  // Mock user data - replace with actual data from your state management system
-  const [userData, setUserData] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-    initials: 'JD',
-    phone: '+1 (555) 123-4567'
-  });
+  // User profile data
+  const [userData, setUserData] = useState<UserProfile | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Form state
-  const [name, setName] = useState(userData.name);
-  const [email, setEmail] = useState(userData.email);
-  const [phone, setPhone] = useState(userData.phone);
+  // Form state - initialize with empty values, will be populated in useEffect
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [formattedPhone, setFormattedPhone] = useState('');
+  const [bio, setBio] = useState('');
+  
+  // Focus state for styling inputs
+  const [nameFocused, setNameFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [phoneFocused, setPhoneFocused] = useState(false);
+  const [bioFocused, setBioFocused] = useState(false);
   
   // Password visibility
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Fetch user profile on component mount
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  // Load user profile data
+  const fetchUserProfile = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const profile = await profileService.getUserProfile();
+      setUserData(profile);
+      
+      // Update form state with profile data
+      setName(profile.fullName);
+      setEmail(profile.email);
+      setBio(profile.bio || '');
+      
+      // TODO: Phone data isn't in the current profile model
+      // You may need to update profileService to include phone information
+      
+    } catch (err) {
+      console.error('Failed to fetch user profile:', err);
+      setError('Failed to load profile data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Handle profile update
   const handleUpdateProfile = async () => {
-    setIsLoading(true);
+    if (!userData) return;
+    
+    setIsSaving(true);
     try {
       // Validate inputs
       if (!name.trim()) {
         Alert.alert('Error', 'Name cannot be empty');
+        setIsSaving(false);
         return;
       }
       
       if (!email.trim() || !email.includes('@')) {
         Alert.alert('Error', 'Please enter a valid email');
+        setIsSaving(false);
         return;
       }
       
-      // In a real app, call your API to update the profile
-      // await updateUserProfile({ name, email, phone });
+      // Update profile in Supabase
+      await profileService.updateProfile({
+        fullName: name,
+        bio: bio
+      });
       
-      // Mock successful update
-      setTimeout(() => {
-        setUserData({ 
-          ...userData, 
-          name, 
-          email, 
-          phone 
-        });
-        
-        Alert.alert(
-          'Success',
-          'Your profile has been updated successfully',
-          [{ text: 'OK', onPress: () => router.back() }]
-        );
-        setIsLoading(false);
-      }, 1000);
+      // Update local state
+      setUserData({
+        ...userData,
+        fullName: name,
+        bio: bio
+      });
+      
+      Alert.alert(
+        'Success',
+        'Your profile has been updated successfully',
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
     } catch (error) {
+      console.error('Error updating profile:', error);
       Alert.alert('Error', 'Failed to update profile. Please try again.');
-      setIsLoading(false);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   // Handle password change
   const handleChangePassword = async () => {
-    setIsLoading(true);
+    setIsSaving(true);
     try {
       // Validate inputs
       if (!currentPassword) {
         Alert.alert('Error', 'Current password is required');
-        setIsLoading(false);
+        setIsSaving(false);
         return;
       }
       
       if (newPassword.length < 8) {
         Alert.alert('Error', 'New password must be at least 8 characters');
-        setIsLoading(false);
+        setIsSaving(false);
         return;
       }
       
       if (newPassword !== confirmPassword) {
         Alert.alert('Error', 'New passwords do not match');
-        setIsLoading(false);
+        setIsSaving(false);
         return;
       }
       
-      // In a real app, call your API to change the password
-      // await changeUserPassword({ currentPassword, newPassword });
+      // In a real app, call Supabase to change the password
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
       
-      // Mock successful update
-      setTimeout(() => {
-        Alert.alert(
-          'Success',
-          'Your password has been updated successfully',
-          [{ text: 'OK' }]
-        );
-        
-        // Clear password fields
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-        
-        setIsLoading(false);
-      }, 1000);
+      if (error) {
+        throw error;
+      }
+      
+      Alert.alert(
+        'Success',
+        'Your password has been updated successfully',
+        [{ text: 'OK' }]
+      );
+      
+      // Clear password fields
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
     } catch (error) {
+      console.error('Error changing password:', error);
       Alert.alert('Error', 'Failed to change password. Please try again.');
-      setIsLoading(false);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   // Handle avatar upload
-  const handleAvatarUpload = () => {
+  const handleAvatarUpload = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
     Alert.alert(
       'Upload Profile Photo',
       'Choose an option',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Take Photo', onPress: () => console.log('Camera') },
-        { text: 'Choose from Library', onPress: () => console.log('Library') }
+        { text: 'Take Photo', onPress: () => pickImage(true) },
+        { text: 'Choose from Library', onPress: () => pickImage(false) }
       ]
     );
   };
+  
+  // Pick image from camera or library
+  const pickImage = async (useCamera: boolean) => {
+    try {
+      // Request permissions first
+      if (useCamera) {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission needed', 'Please grant camera permissions to take a photo');
+          return;
+        }
+      } else {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission needed', 'Please grant photo library permissions to select a photo');
+          return;
+        }
+      }
+      
+      // Launch camera or image picker
+      let result;
+      if (useCamera) {
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.8,
+        });
+      } else {
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.8,
+        });
+      }
+      
+      if (!result.canceled && result.assets && result.assets[0]) {
+        setIsSaving(true);
+        
+        try {
+          const asset = result.assets[0];
+          
+          // Convert image to blob
+          const response = await fetch(asset.uri);
+          const blob = await response.blob();
+          
+          // Upload to Supabase storage and update profile
+          const filePath = `avatar-${userData?.id}-${Date.now()}`;
+          const avatarUrl = await profileService.updateAvatar(filePath, blob);
+          
+          // Update local state
+          if (userData) {
+            setUserData({
+              ...userData,
+              avatarUrl
+            });
+          }
+          
+          Alert.alert('Success', 'Profile photo updated successfully');
+        } catch (error) {
+          console.error('Error uploading avatar:', error);
+          Alert.alert('Error', 'Failed to upload profile photo. Please try again.');
+        } finally {
+          setIsSaving(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    }
+  };
+
+  // Add the missing handleAccountDeactivation function
+  const handleAccountDeactivation = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    
+    // First confirmation
+    Alert.alert(
+      'We\'ll Miss You',
+      'Are you sure you want to deactivate your account? Your connections will miss hearing from you.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Continue with Deactivation', 
+          onPress: () => {
+            Alert.alert(
+              'Account Deactivation',
+              'This feature is currently under maintenance. Please try again later.',
+              [{ text: 'OK' }]
+            );
+          },
+          style: 'destructive' 
+        }
+      ]
+    );
+  };
+
+  // Display loading indicator while fetching profile
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </SafeAreaView>
+    );
+  }
+  
+  // Display error message if profile fetch failed
+  if (error) {
+    return (
+      <SafeAreaView style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchUserProfile}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+  
+  // Display loading message if user data isn't available
+  if (!userData) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <Text style={styles.errorText}>No profile data available</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchUserProfile}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -146,8 +351,8 @@ export default function EditProfileScreen() {
         {/* Avatar Section */}
         <View style={styles.avatarSection}>
           <TouchableOpacity onPress={handleAvatarUpload}>
-            {userData.avatar ? (
-              <Avatar size={100} source={{ uri: userData.avatar }} name={userData.name} />
+            {userData.avatarUrl ? (
+              <Avatar size={90} source={{ uri: userData.avatarUrl }} name={userData.fullName} />
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <Text style={styles.initialsText}>{userData.initials}</Text>
@@ -167,45 +372,66 @@ export default function EditProfileScreen() {
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Full Name</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input, 
+                nameFocused ? styles.inputActive : styles.inputInactive
+              ]}
               value={name}
               onChangeText={setName}
               placeholder="Enter your name"
               placeholderTextColor={COLORS.GRAY}
+              onFocus={() => setNameFocused(true)}
+              onBlur={() => setNameFocused(false)}
             />
           </View>
           
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Email</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input, 
+                emailFocused ? styles.inputActive : styles.inputInactive
+              ]}
               value={email}
               onChangeText={setEmail}
               placeholder="Enter your email"
               placeholderTextColor={COLORS.GRAY}
               keyboardType="email-address"
               autoCapitalize="none"
+              onFocus={() => setEmailFocused(true)}
+              onBlur={() => setEmailFocused(false)}
             />
           </View>
           
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Phone Number (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="Enter your phone number"
-              placeholderTextColor={COLORS.GRAY}
-              keyboardType="phone-pad"
+            <PhoneInput
+              ref={phoneInput}
+              defaultValue={phone}
+              defaultCode="US"
+              layout="first"
+              onChangeText={(text) => setPhone(text)}
+              onChangeFormattedText={(text) => setFormattedPhone(text)}
+              containerStyle={[
+                styles.phoneContainer,
+                phoneFocused && styles.inputActive
+              ]}
+              textContainerStyle={styles.phoneTextContainer}
+              textInputStyle={styles.phoneTextInput}
+              textInputProps={{
+                placeholderTextColor: COLORS.TEXT_DISABLED,
+                onFocus: () => setPhoneFocused(true),
+                onBlur: () => setPhoneFocused(false),
+              }}
             />
           </View>
 
           <TouchableOpacity 
-            style={[styles.updateButton, isLoading && styles.disabledButton]} 
+            style={[styles.updateButton, isSaving && styles.disabledButton]} 
             onPress={handleUpdateProfile}
-            disabled={isLoading}
+            disabled={isSaving}
           >
-            {isLoading ? (
+            {isSaving ? (
               <ActivityIndicator color={COLORS.BLACK} />
             ) : (
               <Text style={styles.updateButtonText}>Update Profile</Text>
@@ -295,13 +521,13 @@ export default function EditProfileScreen() {
           <TouchableOpacity 
             style={[
               styles.updateButton, 
-              isLoading && styles.disabledButton,
+              isSaving && styles.disabledButton,
               (!currentPassword || !newPassword || !confirmPassword) && styles.disabledButton
             ]} 
             onPress={handleChangePassword}
-            disabled={isLoading || !currentPassword || !newPassword || !confirmPassword}
+            disabled={isSaving || !currentPassword || !newPassword || !confirmPassword}
           >
-            {isLoading ? (
+            {isSaving ? (
               <ActivityIndicator color={COLORS.BLACK} />
             ) : (
               <Text style={styles.updateButtonText}>Change Password</Text>
@@ -309,28 +535,12 @@ export default function EditProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Delete Account Option */}
+        {/* Account Deactivation Option */}
         <TouchableOpacity 
-          style={styles.deleteButton}
-          onPress={() => {
-            Alert.alert(
-              'Delete Account',
-              'Are you sure you want to delete your account? This action cannot be undone.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { 
-                  text: 'Delete', 
-                  onPress: () => {
-                    // Handle account deletion
-                    Alert.alert('Account Deletion', 'Your account deletion request has been submitted.');
-                  }, 
-                  style: 'destructive' 
-                }
-              ]
-            );
-          }}
+          style={styles.deactivateButton}
+          onPress={handleAccountDeactivation}
         >
-          <Text style={styles.deleteButtonText}>Delete Account</Text>
+          <Text style={styles.deactivateButtonText}>Deactivate Account</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -436,6 +646,37 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.MEDIUM,
     height: 50,
   },
+  inputActive: {
+    borderWidth: 1,
+    borderColor: COLORS.PRIMARY,
+    opacity: 1,
+  },
+  inputInactive: {
+    opacity: 0.6,
+  },
+  phoneContainer: {
+    width: '100%',
+    backgroundColor: COLORS.BACKGROUND,
+    borderRadius: BORDER_RADIUS.SMALL,
+    height: 50,
+  },
+  phoneTextContainer: {
+    backgroundColor: COLORS.BACKGROUND,
+    borderRadius: BORDER_RADIUS.SMALL,
+    paddingVertical: 0,
+  },
+  phoneTextInput: {
+    color: COLORS.TEXT,
+    fontSize: FONT_SIZES.MEDIUM,
+    height: 50,
+  },
+  phoneCodeText: {
+    color: COLORS.TEXT,
+    fontSize: FONT_SIZES.MEDIUM,
+  },
+  countryPickerButton: {
+    width: 60,
+  },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -470,18 +711,49 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.PRIMARY_DARK,
     opacity: 0.5,
   },
-  deleteButton: {
+  deactivateButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: COLORS.ERROR,
+    borderColor: '#FF6B6B',
     borderRadius: BORDER_RADIUS.SMALL,
     paddingVertical: SPACING.MEDIUM,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.XLARGE,
   },
-  deleteButtonText: {
-    color: COLORS.ERROR,
+  deactivateButtonText: {
+    color: '#FF6B6B',
+    fontWeight: 'bold',
+    fontSize: FONT_SIZES.MEDIUM,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: COLORS.TEXT,
+    fontSize: FONT_SIZES.MEDIUM,
+    marginTop: SPACING.MEDIUM,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: COLORS.TEXT,
+    fontSize: FONT_SIZES.MEDIUM,
+    marginBottom: SPACING.MEDIUM,
+  },
+  retryButton: {
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: BORDER_RADIUS.SMALL,
+    paddingVertical: SPACING.MEDIUM,
+    paddingHorizontal: SPACING.LARGE,
+  },
+  retryButtonText: {
+    color: COLORS.WHITE,
     fontWeight: 'bold',
     fontSize: FONT_SIZES.MEDIUM,
   },

@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase';
+import { supabase } from '../services/supabaseClient';
 
 export type Memory = {
   id: string;

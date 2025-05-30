@@ -33,6 +33,12 @@ export default function LoginScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { signIn, isLoading, error } = useSupabaseAuth();
 
+  // For demo purposes - use this account
+  const useTestAccount = () => {
+    setEmail('demo@circohback.com');
+    setPassword('Password123!');
+  };
+
   // Handle login
   const handleLogin = async () => {
     if (Platform.OS !== 'web') {
@@ -171,6 +177,14 @@ export default function LoginScreen() {
                 ) : (
                   <Text style={styles.buttonText}>Sign In</Text>
                 )}
+              </TouchableOpacity>
+
+              {/* Test Account Button */}
+              <TouchableOpacity
+                style={[styles.button, styles.testAccountButton]}
+                onPress={useTestAccount}
+              >
+                <Text style={styles.testAccountButtonText}>Use Test Account</Text>
               </TouchableOpacity>
 
               {/* Divider */}
@@ -361,8 +375,20 @@ const styles = StyleSheet.create({
   buttonText: {
     color: COLORS.BACKGROUND,
     fontSize: FONT_SIZES.MEDIUM,
-    fontWeight: 'bold',
-    fontFamily: 'MontserratBold',
+    fontFamily: 'MontserratSemiBold',
+    fontWeight: '600',
+  },
+  testAccountButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: COLORS.PRIMARY + '80',
+    marginTop: SPACING.SMALL,
+  },
+  testAccountButtonText: {
+    color: COLORS.PRIMARY,
+    fontSize: FONT_SIZES.SMALL,
+    fontFamily: 'MontserratMedium',
+    fontWeight: '500',
   },
   dividerContainer: {
     flexDirection: 'row',
